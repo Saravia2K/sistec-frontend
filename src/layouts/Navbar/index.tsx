@@ -43,7 +43,7 @@ export default function Navbar() {
   };
 
   return (
-    <AppBar position="relative" sx={{ bgcolor: "#fff", boxShadow: "none" }}>
+    <AppBar position="fixed" sx={{ bgcolor: "#fff", boxShadow: "none" }}>
       <Container maxWidth="xl">
         <Toolbar
           disableGutters

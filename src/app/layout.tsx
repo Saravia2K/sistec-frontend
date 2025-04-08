@@ -1,8 +1,11 @@
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
+import { ThemeProvider } from "@mui/material";
 import { Be_Vietnam_Pro } from "next/font/google";
 import Providers from "./providers";
 import theme from "@/theme";
-import { ThemeProvider } from "@mui/material";
+
+import "./global.css";
+import styles from "./styles.module.scss";
 
 const beVietnamPro = Be_Vietnam_Pro({
   weight: ["300", "400", "500", "700"],
@@ -14,7 +17,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 export default function RootLayout({ children }: TProps) {
   return (
     <html lang="en" className={beVietnamPro.variable}>
-      <body style={{ backgroundColor: "#eeeeee" }}>
+      <body className={styles.body}>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <Providers>{children}</Providers>
