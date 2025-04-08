@@ -14,7 +14,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 export default function RootLayout({ children }: TProps) {
   return (
     <html lang="en" className={beVietnamPro.variable}>
-      <body>
+      <body style={{ backgroundColor: "#eeeeee" }}>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <Providers>{children}</Providers>
