@@ -10,3 +10,8 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+.MuiTableRow-root:last-child td,
+.MuiTableRow-root:last-child th {
+  border: 0;
+}
