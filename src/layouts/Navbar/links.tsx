@@ -21,6 +21,6 @@ function createLinkItem(text: string, path: string, icon: TIcon) {
   return { text, path, icon };
 }
 
-type TIcon = OverridableComponent<SvgIconTypeMap<{}, "svg">> & {
+type TIcon = OverridableComponent<SvgIconTypeMap<object, "svg">> & {
   muiName: string;
 };
