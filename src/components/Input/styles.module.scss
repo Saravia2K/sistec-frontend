@@ -5,6 +5,16 @@
   box-shadow: 0px 4px 3px 0 #bfbfbf;
   border-radius: $br;
 
+  .MuiFormLabel-root {
+    top: -6px;
+    left: 6px;
+
+    &.Mui-focused {
+      top: 0px;
+      left: 0px;
+    }
+  }
+
   fieldset {
     border-radius: $br;
   }
