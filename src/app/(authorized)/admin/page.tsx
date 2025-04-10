@@ -118,28 +118,17 @@ export default function AdminPage() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      ID
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Nombre Pieza
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ borderWidth: 2, borderColor: "#000" }}
-                    >
-                      Existencias
-                    </TableCell>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Nombre Pieza</TableCell>
+                    <TableCell align="right">Existencias</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {lowStockItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell sx={{ border: 0 }}>{item.id}</TableCell>
-                      <TableCell sx={{ border: 0 }}>{item.name}</TableCell>
-                      <TableCell align="right" sx={{ border: 0 }}>
-                        {item.stock}
-                      </TableCell>
+                      <TableCell>{item.id}</TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell align="right">{item.stock}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -203,29 +192,19 @@ export default function AdminPage() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      ID
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Fecha
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Prioridad
-                    </TableCell>
-                    <TableCell
-                      sx={{ borderWidth: 2, borderColor: "#000" }}
-                    ></TableCell>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Fecha</TableCell>
+                    <TableCell>Prioridad</TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {urgentRequests.map((request) => (
                     <TableRow key={request.id}>
-                      <TableCell sx={{ border: 0 }}>{request.id}</TableCell>
-                      <TableCell sx={{ border: 0 }}>{request.date}</TableCell>
-                      <TableCell sx={{ border: 0 }}>
-                        {request.priority}
-                      </TableCell>
-                      <TableCell sx={{ border: 0 }}>
+                      <TableCell>{request.id}</TableCell>
+                      <TableCell>{request.date}</TableCell>
+                      <TableCell>{request.priority}</TableCell>
+                      <TableCell>
                         <Button color="blue" icon type="outlined">
                           <ArrowForwardIcon style={{ color: COLORS.BLUE }} />
                         </Button>

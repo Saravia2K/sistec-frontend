@@ -11,7 +11,12 @@ a {
   color: inherit;
 }
 
-.MuiTableBody-root .MuiTableRow-root:last-child td,
-.MuiTableBody-root .MuiTableRow-root:last-child th {
+.MuiTableBody-root .MuiTableRow-root td,
+.MuiTableBody-root .MuiTableRow-root th {
   border: 0;
+}
+
+.MuiTableRow-head th {
+  border-width: 2px;
+  border-color: #000;
 }
