@@ -2,7 +2,14 @@ import { type PropsWithChildren } from "react";
 import { Button as MUIButton } from "@mui/material";
 import { COLORS } from "@/lib/consts";
 
-export default function Button({ children, color, icon, type }: TProps) {
+export default function Button({
+  children,
+  color,
+  icon,
+  type,
+  onClick,
+  buttonType,
+}: TProps) {
   const _color = COLORS[color.toUpperCase() as keyof typeof COLORS];
   return (
     <MUIButton
@@ -19,6 +26,8 @@ export default function Button({ children, color, icon, type }: TProps) {
         width: icon ? "fit-content" : undefined,
         minWidth: icon ? "auto" : undefined,
       }}
+      onClick={onClick}
+      type={buttonType}
     />
   );
 }
@@ -27,4 +36,6 @@ type TProps = PropsWithChildren<{
   color: "blue" | "green";
   icon?: boolean;
   type?: "table" | "outlined";
+  onClick?: () => void;
+  buttonType?: "submit" | "reset" | "button";
 }>;
