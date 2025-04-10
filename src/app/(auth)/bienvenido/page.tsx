@@ -20,7 +20,7 @@ export default function WelcomePage() {
         component={Image}
         src={logotype}
         alt="Sistec"
-        width={{ xs: "85%", md: "50%" }}
+        width={{ xs: "75%", sm: "35%" }}
         height="auto"
         my={3}
       />
