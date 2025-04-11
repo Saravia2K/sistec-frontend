@@ -22,6 +22,7 @@ export default function Select({
         [`${formControlProps?.className}`]: !!formControlProps?.className,
         [styles.select]: true,
       })}
+      fullWidth={selectProps.fullWidth}
     >
       <InputLabel {...inputLabelProps}>{selectProps.label}</InputLabel>
       <MUISelect {...selectProps} />
@@ -31,7 +32,7 @@ export default function Select({
 
 type TProps = Readonly<
   SelectProps & {
-    formControlProps?: FormControlProps;
+    formControlProps?: Omit<FormControlProps, "fullWidth">;
     inputLabelProps?: InputLabelProps;
   }
 >;
