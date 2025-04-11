@@ -1,3 +1,5 @@
+import { ETechnicianSpeciality } from "./enums";
+
 export type TUser = {
   id: number;
   name: string;
@@ -10,4 +12,10 @@ export type TClient = TUser & {
   //   id_client: number;
   address: string;
   registrationDate: string;
+};
+
+export type TTechnician = TUser & {
+  // id_technician: number;
+  specialty: ETechnicianSpeciality;
+  active: boolean;
 };
