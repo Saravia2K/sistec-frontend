@@ -23,17 +23,18 @@ import Select from "@/components/Select";
 import MenuItem from "@mui/material/MenuItem";
 import { format } from "date-fns";
 import { truncateText } from "@/lib/helpers";
+import { ETicketStatus } from "@/lib/enums";
+import Swal from "sweetalert2";
 
 // Tipos para los enums de Prisma
-type TicketStatus = "pending" | "in_progress" | "resolved" | "cancelled";
 type TicketPriority = "low" | "medium" | "high" | "critical";
 
 // Mapeo de estados para mostrar en español
 const statusMap = {
-  pending: "Pendiente",
-  in_progress: "En Progreso",
-  resolved: "Resuelto",
-  cancelled: "Cancelado",
+  [ETicketStatus.PENDING]: "Pendiente",
+  [ETicketStatus.IN_PROGRESS]: "En Progreso",
+  [ETicketStatus.COMPLETED]: "Resuelto",
+  [ETicketStatus.CANCELED]: "Cancelado",
 };
 
 // Mapeo de prioridades para mostrar en español
@@ -62,7 +63,7 @@ const ticketsData = [
     model: "Pavilion 15",
     problemDescription:
       "El equipo no enciende correctamente. Se queda en la pantalla de inicio y luego se apaga. Ya se intentó reiniciar varias veces sin éxito.",
-    status: "pending" as TicketStatus,
+    status: ETicketStatus.PENDING,
     priority: "high" as TicketPriority,
     serialNumber: "HP78945612",
     creationDate: new Date("2025-03-15"),
@@ -76,7 +77,7 @@ const ticketsData = [
     model: "Optiplex 7090",
     problemDescription:
       "Problemas con el sistema operativo. Windows muestra pantalla azul al iniciar aplicaciones pesadas.",
-    status: "in_progress" as TicketStatus,
+    status: ETicketStatus.IN_PROGRESS,
     priority: "medium" as TicketPriority,
     serialNumber: "DL45678923",
     creationDate: new Date("2025-03-18"),
@@ -90,7 +91,7 @@ const ticketsData = [
     model: "L3150",
     problemDescription:
       "No imprime correctamente. Las hojas salen con manchas y rayas.",
-    status: "resolved" as TicketStatus,
+    status: ETicketStatus.COMPLETED,
     priority: "low" as TicketPriority,
     serialNumber: "EP12345678",
     creationDate: new Date("2025-03-10"),
@@ -104,7 +105,7 @@ const ticketsData = [
     model: "Galaxy S22",
     problemDescription:
       "La batería se descarga muy rápido y el dispositivo se calienta demasiado.",
-    status: "pending" as TicketStatus,
+    status: ETicketStatus.PENDING,
     priority: "critical" as TicketPriority,
     serialNumber: "SM98765432",
     creationDate: new Date("2025-03-20"),
@@ -118,7 +119,7 @@ const ticketsData = [
     model: "iPad Pro 12.9",
     problemDescription:
       "La pantalla táctil no responde correctamente en ciertas áreas.",
-    status: "in_progress" as TicketStatus,
+    status: ETicketStatus.COMPLETED,
     priority: "high" as TicketPriority,
     serialNumber: "AP87654321",
     creationDate: new Date("2025-03-17"),
@@ -138,10 +139,10 @@ const priorityOptions = [
 // Opciones para el filtro de estado
 const statusOptions = [
   { value: "all", label: "Todos los estados" },
-  { value: "pending", label: "Pendiente" },
-  { value: "in_progress", label: "En Progreso" },
-  { value: "resolved", label: "Resuelto" },
-  { value: "cancelled", label: "Cancelado" },
+  { value: ETicketStatus.PENDING, label: "Pendiente" },
+  { value: ETicketStatus.IN_PROGRESS, label: "En Progreso" },
+  { value: ETicketStatus.COMPLETED, label: "Resuelto" },
+  { value: ETicketStatus.CANCELED, label: "Cancelado" },
 ];
 
 export default function TicketsPage() {
@@ -191,8 +192,29 @@ export default function TicketsPage() {
   };
 
   const handleDelete = (id: number) => {
-    console.log("Eliminar ticket:", id);
-    // Aquí iría la lógica para confirmar y eliminar
+    Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡No podrás revertir esta acción!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Aquí iría la lógica para eliminar el ticket
+        setFilteredTickets(
+          filteredTickets.filter((ticket) => ticket.id !== id)
+        );
+
+        Swal.fire(
+          "¡Eliminado!",
+          "El ticket ha sido eliminado correctamente.",
+          "success"
+        );
+      }
+    });
   };
 
   return (
@@ -345,20 +367,31 @@ export default function TicketsPage() {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(ticket.id)}
-                          sx={{ color: "#4caf50" }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(ticket.id)}
-                          sx={{ color: "#f44336" }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        {[
+                          ETicketStatus.PENDING,
+                          ETicketStatus.IN_PROGRESS,
+                        ].includes(ticket.status as ETicketStatus) && (
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              router.push(
+                                `/cliente/tickets/${ticket.id}/editar`
+                              )
+                            }
+                            sx={{ color: "#4caf50" }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {ticket.status == ETicketStatus.PENDING && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDelete(ticket.id)}
+                            sx={{ color: "#f44336" }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>

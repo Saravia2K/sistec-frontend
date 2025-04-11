@@ -5,10 +5,10 @@ export enum ETechnicianSpeciality {
 }
 
 export enum ETicketStatus {
-  pending = "pending",
-  in_progress = "in_progress",
-  completed = "completed",
-  canceled = "canceled",
+  PENDING = "pending",
+  IN_PROGRESS = "in_progress",
+  COMPLETED = "completed",
+  CANCELED = "canceled",
 }
 
 export enum ETicketPriority {

@@ -1,3 +1,4 @@
+import { useRouter } from "next/navigation";
 import { Grid, Paper, FormControl, FormLabel, MenuItem } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import Button from "@/components/Buttton";
@@ -21,6 +22,7 @@ type SupportTicketFormData = Pick<
 };
 
 export default function ClientNewTicket({ ticket }: TProps) {
+  const router = useRouter();
   const isEditing = ticket != undefined;
 
   const { control, handleSubmit, reset } = useForm<SupportTicketFormData>({
@@ -172,7 +174,10 @@ export default function ClientNewTicket({ ticket }: TProps) {
               gap: 2,
             }}
           >
-            <Button color="blue" onClick={() => reset()}>
+            <Button
+              color="blue"
+              onClick={() => router.push("/cliente/tickets")}
+            >
               Cancelar
             </Button>
             <Button color="green" buttonType="submit">

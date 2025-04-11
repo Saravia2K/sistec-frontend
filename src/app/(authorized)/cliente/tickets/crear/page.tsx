@@ -1,6 +1,6 @@
 "use client";
 
-import ClientNewTicket from "@/Forms/ClientNewTicket";
+import ClientTicket from "@/Forms/ClientTicket";
 import { Box, Typography } from "@mui/material";
 
 export default function SupportTicketForm() {
@@ -10,7 +10,7 @@ export default function SupportTicketForm() {
         Nuevo Ticket de Soporte
       </Typography>
 
-      <ClientNewTicket />
+      <ClientTicket />
     </Box>
   );
 }
