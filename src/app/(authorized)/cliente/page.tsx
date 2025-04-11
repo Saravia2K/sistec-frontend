@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   Box,
   Grid,
@@ -51,6 +52,8 @@ const requestsData = [
 ];
 
 export default function ClientePage() {
+  const router = useRouter();
+
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" mb={3}>
@@ -190,7 +193,14 @@ export default function ClientePage() {
                       <TableCell>{request.agent}</TableCell>
                       <TableCell>{request.status}</TableCell>
                       <TableCell>
-                        <Button color="green" icon type="outlined">
+                        <Button
+                          color="green"
+                          icon
+                          type="outlined"
+                          onClick={() =>
+                            router.push(`/cliente/tickets/${request.id}`)
+                          }
+                        >
                           <ArrowForwardIcon
                             fontSize="small"
                             style={{ color: COLORS.GREEN }}

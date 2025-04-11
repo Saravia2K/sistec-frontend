@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Box,
   Grid,
@@ -9,6 +9,7 @@ import {
   Table,
   Tooltip,
   TableRow,
+  MenuItem,
   TableBody,
   TableCell,
   TableHead,
@@ -18,13 +19,14 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { format } from "date-fns";
+import Swal from "sweetalert2";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import Button from "@/components/Buttton";
 import Select from "@/components/Select";
-import MenuItem from "@mui/material/MenuItem";
-import { format } from "date-fns";
 import { truncateText } from "@/lib/helpers";
 import { ETicketStatus } from "@/lib/enums";
-import Swal from "sweetalert2";
+import Link from "next/link";
 
 // Tipos para los enums de Prisma
 type TicketPriority = "low" | "medium" | "high" | "critical";
@@ -153,6 +155,7 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [filteredTickets, setFilteredTickets] = useState(ticketsData);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Aplicar filtros cuando cambien
   useEffect(() => {
@@ -367,21 +370,20 @@ export default function TicketsPage() {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
+                        <Link href={`${pathname}/${ticket.id}`}>
+                          <IconButton size="small" sx={{ color: "#4caf50" }}>
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Link>
                         {[
                           ETicketStatus.PENDING,
                           ETicketStatus.IN_PROGRESS,
                         ].includes(ticket.status as ETicketStatus) && (
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              router.push(
-                                `/cliente/tickets/${ticket.id}/editar`
-                              )
-                            }
-                            sx={{ color: "#4caf50" }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                          <Link href={`${pathname}/${ticket.id}/editar`}>
+                            <IconButton size="small" sx={{ color: "#ff9800" }}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Link>
                         )}
                         {ticket.status == ETicketStatus.PENDING && (
                           <IconButton

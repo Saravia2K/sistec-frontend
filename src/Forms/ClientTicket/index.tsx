@@ -1,10 +1,11 @@
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Grid, Paper, FormControl, FormLabel, MenuItem } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import Button from "@/components/Buttton";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import { TTicket } from "@/lib/types";
+import Swal from "sweetalert2";
 
 const supportedDevices = [
   { id: 1, name: "Laptop" },
@@ -21,8 +22,9 @@ type SupportTicketFormData = Pick<
   deviceTypeId: number;
 };
 
-export default function ClientNewTicket({ ticket }: TProps) {
+export default function ClientTicket({ ticket, watch }: TProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const isEditing = ticket != undefined;
 
   const { control, handleSubmit, reset } = useForm<SupportTicketFormData>({
@@ -44,6 +46,28 @@ export default function ClientNewTicket({ ticket }: TProps) {
       reset();
     }
   };
+
+  const handleDelete = () => {
+    Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡No podrás revertir esta acción!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire(
+          "¡Eliminado!",
+          "El ticket ha sido eliminado correctamente.",
+          "success"
+        );
+      }
+    });
+  };
+
   return (
     <Paper sx={{ p: 3, borderRadius: 5 }}>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -60,9 +84,10 @@ export default function ClientNewTicket({ ticket }: TProps) {
                   <Select
                     {...field}
                     fullWidth
+                    displayEmpty
+                    disabled={watch}
                     error={!!fieldState.error}
                     //   helperText={fieldState.error?.message}
-                    displayEmpty
                   >
                     <MenuItem disabled value="">
                       <em>Seleccione un dispositivo</em>
@@ -89,6 +114,7 @@ export default function ClientNewTicket({ ticket }: TProps) {
                   <Input
                     {...field}
                     fullWidth
+                    disabled={watch}
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
                     placeholder="Ej: HP, Dell, Apple"
@@ -108,6 +134,7 @@ export default function ClientNewTicket({ ticket }: TProps) {
                   <Input
                     {...field}
                     fullWidth
+                    disabled={watch}
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
                     placeholder="Ej: Inspiron 15, MacBook Pro"
@@ -127,6 +154,7 @@ export default function ClientNewTicket({ ticket }: TProps) {
                   <Input
                     {...field}
                     fullWidth
+                    disabled={watch}
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
                     placeholder="Número de serie del dispositivo"
@@ -154,6 +182,7 @@ export default function ClientNewTicket({ ticket }: TProps) {
                     {...field}
                     fullWidth
                     multiline
+                    disabled={watch}
                     rows={4}
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
@@ -165,25 +194,47 @@ export default function ClientNewTicket({ ticket }: TProps) {
           </Grid>
 
           {/* Botones de acción */}
-          <Grid
-            size={{ xs: 12 }}
-            sx={{
-              mt: 2,
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 2,
-            }}
-          >
-            <Button
-              color="blue"
-              onClick={() => router.push("/cliente/tickets")}
+          {!watch ? (
+            <Grid
+              size={{ xs: 12 }}
+              sx={{
+                mt: 2,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 2,
+              }}
             >
-              Cancelar
-            </Button>
-            <Button color="green" buttonType="submit">
-              {isEditing ? "Actualizar" : "Guardar"}
-            </Button>
-          </Grid>
+              <Button
+                color="blue"
+                onClick={() => router.push("/cliente/tickets")}
+              >
+                Cancelar
+              </Button>
+              <Button color="green" buttonType="submit">
+                {isEditing ? "Actualizar" : "Guardar"}
+              </Button>
+            </Grid>
+          ) : (
+            <Grid
+              size={{ xs: 12 }}
+              sx={{
+                mt: 2,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 2,
+              }}
+            >
+              <Button color="blue" onClick={handleDelete}>
+                Eliminar
+              </Button>
+              <Button
+                color="green"
+                onClick={() => router.push(`${pathname}/editar`)}
+              >
+                Editar
+              </Button>
+            </Grid>
+          )}
         </Grid>
       </form>
     </Paper>
@@ -194,4 +245,5 @@ type TProps = {
   ticket?: SupportTicketFormData & {
     id: number;
   };
+  watch?: boolean;
 };
