@@ -168,25 +168,8 @@ export default function AdminUsuariosPage() {
       </Grid>
 
       {/* Modal para crear/editar cliente */}
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-client-form"
-        aria-describedby="modal-client-form-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: { xs: "90%", sm: 500 },
-            bgcolor: "background.paper",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 2,
-          }}
-        >
+      <Modal open={open} onClose={handleClose}>
+        <>
           <Typography id="modal-client-form" variant="h6" component="h2" mb={3}>
             {editingClient ? "Editar Cliente" : "Nuevo Cliente"}
           </Typography>
@@ -300,7 +283,7 @@ export default function AdminUsuariosPage() {
               </Grid>
             </Grid>
           </form>
-        </Box>
+        </>
       </Modal>
     </Box>
   );
