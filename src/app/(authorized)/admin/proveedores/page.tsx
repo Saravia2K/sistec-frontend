@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import Swal from "sweetalert2";
 import {
   Box,
   Grid,
@@ -10,17 +12,15 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  FormLabel,
   Typography,
+  FormControl,
   TableContainer,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import Button from "@/components/Buttton";
 import Modal from "@/components/Modal";
-import { useForm, Controller } from "react-hook-form";
-import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import FormLabel from "@mui/material/FormLabel";
-import Swal from "sweetalert2";
+import Input from "@/components/Input";
 import type { TSupplier } from "@/lib/types";
 
 // Datos de ejemplo basados en el modelo de Prisma
@@ -218,7 +218,7 @@ export default function PrveedoresPage() {
                   defaultValue=""
                   rules={{ required: "Este campo es obligatorio" }}
                   render={({ field, fieldState }) => (
-                    <TextField
+                    <Input
                       {...field}
                       fullWidth
                       error={!!fieldState.error}
@@ -239,7 +239,7 @@ export default function PrveedoresPage() {
                   defaultValue=""
                   rules={{ required: "Este campo es obligatorio" }}
                   render={({ field, fieldState }) => (
-                    <TextField
+                    <Input
                       {...field}
                       fullWidth
                       error={!!fieldState.error}
@@ -265,7 +265,7 @@ export default function PrveedoresPage() {
                     },
                   }}
                   render={({ field, fieldState }) => (
-                    <TextField
+                    <Input
                       {...field}
                       fullWidth
                       error={!!fieldState.error}
@@ -285,7 +285,7 @@ export default function PrveedoresPage() {
                   control={control}
                   defaultValue=""
                   render={({ field }) => (
-                    <TextField
+                    <Input
                       {...field}
                       fullWidth
                       placeholder="Dirección completa"
