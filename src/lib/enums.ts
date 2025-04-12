@@ -16,3 +16,10 @@ export enum ETicketPriority {
   medium = "medium",
   high = "high",
 }
+
+export enum EPurchaseStatus {
+  PENDING = "pending",
+  COMPLETED = "completed",
+  CANCELED = "canceled",
+  RETURNED = "returned",
+}

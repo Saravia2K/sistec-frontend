@@ -1,4 +1,9 @@
-import { ETechnicianSpeciality, ETicketPriority, ETicketStatus } from "./enums";
+import {
+  EPurchaseStatus,
+  ETechnicianSpeciality,
+  ETicketPriority,
+  ETicketStatus,
+} from "./enums";
 
 export type TUser = {
   id: number;
@@ -39,5 +44,65 @@ export type TTicket = {
   serialNumber?: string;
   requestDate?: Date;
   closeDate?: Date;
-  // repair: TRepair;
+  repair: TRepair;
+};
+
+export type TRepair = {
+  id: number;
+  supportTicket?: TTicket;
+  diagnosis: string;
+  startDate: Date;
+  appliedSolution?: string;
+  endDate?: Date;
+  estimatedCost?: number;
+  usedComponents?: TUsedComponents[];
+};
+
+export type TComponent = {
+  id: number;
+  name: string;
+  description: string;
+  visible: string;
+  components: TComponentStock[];
+  purchases: TPurchase[];
+};
+
+export type TComponentStock = {
+  id: number;
+  component: TComponent;
+  supplier: TSupplier;
+  stock: number;
+  minimumStock: number;
+  unitPrice: number;
+  inUse: Boolean;
+  usedIn: TUsedComponents[];
+};
+
+export type TUsedComponents = {
+  id: number;
+  repair: TRepair;
+  quantity: number;
+  componentStock: TComponentStock;
+};
+
+export type TSupplier = {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  purchases?: TPurchase[];
+  stocks?: TComponentStock[];
+};
+
+export type TPurchase = {
+  id: number;
+  supplier: TSupplier;
+  component: TComponent;
+  quantity: number;
+  unitPrice: number;
+  purchaseDate: Date;
+  devileryDate?: Date;
+  details?: string;
+  status: EPurchaseStatus;
 };
