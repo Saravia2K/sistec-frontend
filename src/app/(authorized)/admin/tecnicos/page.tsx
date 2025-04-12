@@ -14,60 +14,52 @@ import {
   Typography,
   TableContainer,
   MenuItem,
+  capitalize,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import Button from "@/components/Buttton";
 import { useForm, Controller } from "react-hook-form";
-import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
-import Select from "@mui/material/Select";
-import { TTechnician } from "@/lib/types";
+import { TResponseError, TTechnician } from "@/lib/types";
 import { ETechnicianSpeciality } from "@/lib/enums";
 import Modal from "@/components/Modal";
-
-// Datos de ejemplo
-const supportData = [
-  {
-    id: 1,
-    name: "Ana Martínez",
-    phone: "555-111-2222",
-    email: "ana.martinez@example.com",
-    specialty: ETechnicianSpeciality.HARDWARE,
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Roberto Sánchez",
-    phone: "555-333-4444",
-    email: "roberto.sanchez@example.com",
-    specialty: ETechnicianSpeciality.SOFTWARE,
-    active: true,
-  },
-  {
-    id: 3,
-    name: "Laura Gómez",
-    phone: "555-555-6666",
-    email: "laura.gomez@example.com",
-    specialty: ETechnicianSpeciality.GENERAL,
-    active: false,
-  },
-];
+import Input from "@/components/Input";
+import Select from "@/components/Select";
+import useTechnicians from "@/hooks/useTechnicians";
+import { toast } from "react-toastify";
+import axios, { AxiosResponse } from "axios";
+import { API_URL } from "@/lib/consts";
+import Swal from "sweetalert2";
 
 // Tipo para el formulario
 type SupportFormData = {
   name: string;
   phone: string;
   email: string;
-  specialty: string;
+  specialty: ETechnicianSpeciality;
   active: boolean;
+  password: string;
 };
 
 export default function AdminSoportesPage() {
+  const { technicians, reloadTechnicians, techniciansLoading } =
+    useTechnicians();
   const [open, setOpen] = useState(false);
-  const [editingSupport, setEditingSupport] = useState<any>(null);
+  const [editingSupport, setEditingSupport] = useState<
+    TTechnician | null | undefined
+  >(null);
 
-  const { control, handleSubmit, reset } = useForm<SupportFormData>();
+  const { control, handleSubmit, reset } = useForm<SupportFormData>({
+    defaultValues: {
+      name: "",
+      phone: "",
+      email: "",
+      specialty: ETechnicianSpeciality.GENERAL,
+      active: true,
+      password: "",
+    },
+  });
 
   const handleOpen = (support?: TTechnician) => {
     setEditingSupport(support);
@@ -84,7 +76,7 @@ export default function AdminSoportesPage() {
         name: "",
         phone: "",
         email: "",
-        specialty: "",
+        specialty: ETechnicianSpeciality.GENERAL,
         active: true,
       });
     }
@@ -96,18 +88,56 @@ export default function AdminSoportesPage() {
     setEditingSupport(null);
   };
 
-  const onSubmit = (data: SupportFormData) => {
-    // Aquí se conectaría con la API
-    console.log("Form data:", data);
-    console.log("Editing support:", editingSupport ? editingSupport.id : "new");
+  const onSubmit = async (data: SupportFormData) => {
+    let response: AxiosResponse;
+    const isEditing = editingSupport != null && editingSupport != undefined;
+    if (!isEditing) {
+      response = await axios.post(`${API_URL}/technicians`, data);
+    } else {
+      response = await axios.patch(
+        `${API_URL}/technicians/${editingSupport.idUser}`,
+        data
+      );
+    }
+
+    if (response.status >= 400) {
+      const { message } = response.data as TResponseError;
+      toast(message.join(", "), {
+        type: "error",
+      });
+      return;
+    }
+
+    toast(`Técnico ${isEditing ? "actualizado" : "creado"} correctamente`, {
+      type: "success",
+    });
+
+    reloadTechnicians();
     handleClose();
   };
 
   const handleDelete = (id: number) => {
-    // Aquí se conectaría con la API para eliminar
-    console.log("Delete support with ID:", id);
+    Swal.fire({
+      title: "¿Está seguro?",
+      html: "¿Deseas eliminar este técnico de forma permanente?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#1976D2", // Azul
+      cancelButtonColor: "#4CAF50", // Verde
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await axios.delete(`${API_URL}/technicians/${id}`);
+        toast("Técnico eliminado con éxito", {
+          type: "success",
+        });
+        reloadTechnicians();
+      }
+    });
   };
 
+  if (!technicians || techniciansLoading) return;
   return (
     <Box>
       <Box
@@ -134,43 +164,29 @@ export default function AdminSoportesPage() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Nombre
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Teléfono
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Correo Electrónico
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Especialidad
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Estado
-                    </TableCell>
-                    <TableCell sx={{ borderWidth: 2, borderColor: "#000" }}>
-                      Acciones
-                    </TableCell>
+                    <TableCell>Nombre</TableCell>
+                    <TableCell>Teléfono</TableCell>
+                    <TableCell>Correo Electrónico</TableCell>
+                    <TableCell>Especialidad</TableCell>
+                    <TableCell>Estado</TableCell>
+                    <TableCell>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {supportData.map((support) => (
+                  {technicians.map((support) => (
                     <TableRow key={support.id}>
-                      <TableCell sx={{ border: 0 }}>{support.name}</TableCell>
-                      <TableCell sx={{ border: 0 }}>{support.phone}</TableCell>
-                      <TableCell sx={{ border: 0 }}>{support.email}</TableCell>
-                      <TableCell sx={{ border: 0 }}>
-                        {support.specialty}
-                      </TableCell>
-                      <TableCell sx={{ border: 0 }}>
+                      <TableCell>{support.name}</TableCell>
+                      <TableCell>{support.phone}</TableCell>
+                      <TableCell>{support.email}</TableCell>
+                      <TableCell>{support.specialty}</TableCell>
+                      <TableCell>
                         <Chip
                           label={support.active ? "Activo" : "Inactivo"}
                           color={support.active ? "success" : "error"}
                           size="small"
                         />
                       </TableCell>
-                      <TableCell sx={{ border: 0 }}>
+                      <TableCell>
                         <Box display="flex" gap={1}>
                           <Button
                             color="green"
@@ -180,7 +196,7 @@ export default function AdminSoportesPage() {
                           </Button>
                           <Button
                             color="blue"
-                            onClick={() => handleDelete(support.id)}
+                            onClick={() => handleDelete(support.idUser)}
                           >
                             Eliminar
                           </Button>
@@ -217,7 +233,7 @@ export default function AdminSoportesPage() {
                     defaultValue=""
                     rules={{ required: "Este campo es obligatorio" }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
@@ -238,7 +254,7 @@ export default function AdminSoportesPage() {
                     defaultValue=""
                     rules={{ required: "Este campo es obligatorio" }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
@@ -265,7 +281,7 @@ export default function AdminSoportesPage() {
                       },
                     }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
@@ -283,7 +299,7 @@ export default function AdminSoportesPage() {
                   <Controller
                     name="specialty"
                     control={control}
-                    defaultValue=""
+                    defaultValue={ETechnicianSpeciality.GENERAL}
                     rules={{ required: "Este campo es obligatorio" }}
                     render={({ field, fieldState }) => (
                       <Select
@@ -299,8 +315,7 @@ export default function AdminSoportesPage() {
                         {Object.values(ETechnicianSpeciality).map(
                           (specialty) => (
                             <MenuItem key={specialty} value={specialty}>
-                              {specialty.charAt(0).toUpperCase()}
-                              {specialty.slice(1)}
+                              {capitalize(specialty)}
                             </MenuItem>
                           )
                         )}
@@ -321,6 +336,33 @@ export default function AdminSoportesPage() {
                         <MenuItem value={true as any}>Activo</MenuItem>
                         <MenuItem value={false as any}>Inactivo</MenuItem>
                       </Select>
+                    )}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <FormControl fullWidth>
+                  <FormLabel>Contraseña</FormLabel>
+                  <Controller
+                    name="password"
+                    control={control}
+                    defaultValue=""
+                    rules={{
+                      required:
+                        editingSupport == null
+                          ? "Este campo es obligatorio"
+                          : undefined,
+                    }}
+                    render={({ field, fieldState }) => (
+                      <Input
+                        {...field}
+                        fullWidth
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                        placeholder="Contraseña temporal"
+                        size="small"
+                        type="password"
+                      />
                     )}
                   />
                 </FormControl>

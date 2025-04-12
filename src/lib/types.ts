@@ -14,13 +14,13 @@ export type TUser = {
 };
 
 export type TClient = TUser & {
-  idClient: number;
+  idUser: number;
   address: string;
   registrationDate: Date;
 };
 
 export type TTechnician = TUser & {
-  // id_technician: number;
+  idUser: number;
   specialty: ETechnicianSpeciality;
   active: boolean;
 };

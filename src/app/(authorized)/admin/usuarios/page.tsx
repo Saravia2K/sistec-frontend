@@ -87,7 +87,7 @@ export default function AdminUsuariosPage() {
       response = await axios.post(`${API_URL}/clients`, data);
     } else {
       response = await axios.patch(
-        `${API_URL}/clients/${editingClient.id}`,
+        `${API_URL}/clients/${editingClient.idUser}`,
         data
       );
     }
@@ -185,7 +185,7 @@ export default function AdminUsuariosPage() {
                           </Button>
                           <Button
                             color="blue"
-                            onClick={() => handleDelete(client.id)}
+                            onClick={() => handleDelete(client.idUser)}
                           >
                             Eliminar
                           </Button>
@@ -296,7 +296,7 @@ export default function AdminUsuariosPage() {
                         fullWidth
                         error={!!fieldState.error}
                         helperText={fieldState.error?.message}
-                        placeholder="Nombre completo"
+                        placeholder="Contraseña"
                         size="small"
                         type="password"
                       />
