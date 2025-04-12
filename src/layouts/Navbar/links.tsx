@@ -4,6 +4,7 @@ import EngineeringIcon from "@mui/icons-material/Engineering";
 import FolderCopyIcon from "@mui/icons-material/FolderCopy";
 import PersonIcon from "@mui/icons-material/Person";
 import FireTruckIcon from "@mui/icons-material/FireTruck";
+import SettingsInputComponentIcon from "@mui/icons-material/SettingsInputComponent";
 import type { SvgIconTypeMap } from "@mui/material";
 import type { OverridableComponent } from "@mui/material/OverridableComponent";
 
@@ -13,6 +14,7 @@ export default {
     links: [
       createLinkItem("Solicitudes", "/solicitudes", ReceiptIcon),
       createLinkItem("Inventario", "/inventario", InventoryIcon),
+      createLinkItem("Componentes", "/componentes", SettingsInputComponentIcon),
       createLinkItem("Usuarios", "/usuarios", PersonIcon),
       createLinkItem("Técnicos", "/tecnicos", EngineeringIcon),
       createLinkItem("Proveedores", "/proveedores", FireTruckIcon),
