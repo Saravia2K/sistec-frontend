@@ -102,7 +102,7 @@ export type TPurchase = {
   quantity: number;
   unitPrice: number;
   purchaseDate: Date;
-  devileryDate?: Date;
+  deliveryDate?: Date;
   details?: string;
   status: EPurchaseStatus;
 };

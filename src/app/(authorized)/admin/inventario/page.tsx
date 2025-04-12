@@ -20,80 +20,21 @@ import { Add as AddIcon } from "@mui/icons-material";
 import Button from "@/components/Buttton";
 import Modal from "@/components/Modal";
 import { useForm, Controller } from "react-hook-form";
-import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 import Swal from "sweetalert2";
 import { EPurchaseStatus } from "@/lib/enums";
-import { TPurchase } from "@/lib/types";
+import { TPurchase, TResponseError } from "@/lib/types";
 import { formatDate, formatPrice, truncateText } from "@/lib/helpers";
 import Select from "@/components/Select";
 import Input from "@/components/Input";
-
-// Datos de ejemplo para proveedores
-const suppliersData = [
-  { id: 1, name: "Electrónica Global" },
-  { id: 2, name: "Componentes Rápidos" },
-  { id: 3, name: "Suministros Tech" },
-];
-
-// Datos de ejemplo para componentes
-const componentsData = [
-  { id: 1, name: "Procesador Intel i7" },
-  { id: 2, name: "Memoria RAM 16GB" },
-  { id: 3, name: "Disco SSD 1TB" },
-  { id: 4, name: "Tarjeta Gráfica NVIDIA" },
-];
-
-// Datos de ejemplo para compras
-const purchasesData = [
-  {
-    id: 1,
-    supplier: { id: 1 },
-    component: { id: 1 },
-    quantity: 10,
-    unitPrice: 299.99,
-    purchaseDate: new Date("2025-01-15"),
-    deliveryDate: new Date("2025-01-25"),
-    details:
-      "Procesadores de última generación para equipos de alto rendimiento. Incluye garantía extendida y soporte técnico especializado.",
-    status: EPurchaseStatus.COMPLETED,
-  },
-  {
-    id: 2,
-    supplier: { id: 2 },
-    component: { id: 2 },
-    quantity: 20,
-    unitPrice: 89.5,
-    purchaseDate: new Date("2025-02-10"),
-    deliveryDate: null,
-    details:
-      "Memorias RAM de alta velocidad para actualización de equipos existentes.",
-    status: EPurchaseStatus.PENDING,
-  },
-  {
-    id: 3,
-    supplier: { id: 3 },
-    component: { id: 2 },
-    quantity: 15,
-    unitPrice: 129.99,
-    purchaseDate: new Date("2025-03-05"),
-    deliveryDate: new Date("2025-03-15"),
-    details:
-      "Discos de estado sólido para mejorar el rendimiento de almacenamiento.",
-    status: EPurchaseStatus.CANCELED,
-  },
-];
-
-// Tipo para el formulario basado en el modelo de Prisma
-type PurchaseFormData = {
-  supplierId: number;
-  componentId: number;
-  quantity: number;
-  unitPrice: number;
-  details: string;
-  status: EPurchaseStatus;
-};
+import useSuppliers from "@/hooks/useSuppliers";
+import axios from "axios";
+import { API_URL } from "@/lib/consts";
+import { toast } from "react-toastify";
+import usePurchases from "@/hooks/usePurchases";
+import useComponents from "@/hooks/useComponents";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 // Mapeo de estados a texto en español
 const statusLabels = {
@@ -103,10 +44,25 @@ const statusLabels = {
   [EPurchaseStatus.RETURNED]: "Devuelto",
 };
 
+// Tipo para el formulario basado en el modelo de Prisma
+type PurchaseFormData = {
+  supplierId: number;
+  componentId: number;
+  quantity: number;
+  unitPrice: number;
+  details: string;
+  status: EPurchaseStatus;
+  purchaseDate: Date;
+};
+
 export default function InventarioPage() {
+  const { suppliers } = useSuppliers();
+  const { purchases, reloadPurchases } = usePurchases();
+  const { components } = useComponents();
   const [openForm, setOpenForm] = useState(false);
-  const [editingPurchase, setEditingPurchase] = useState<any>(null);
-  const [purchases, setPurchases] = useState(purchasesData);
+  const [editingPurchase, setEditingPurchase] = useState<TPurchase | null>(
+    null
+  );
 
   const { control, handleSubmit, reset } = useForm<PurchaseFormData>();
 
@@ -120,6 +76,7 @@ export default function InventarioPage() {
         unitPrice: purchase.unitPrice,
         details: purchase.details || "",
         status: purchase.status,
+        purchaseDate: new Date(purchase.purchaseDate), // Convertir string a Date
       });
     } else {
       reset({
@@ -129,6 +86,7 @@ export default function InventarioPage() {
         unitPrice: 0,
         details: "",
         status: EPurchaseStatus.PENDING,
+        purchaseDate: new Date(), // Fecha actual por defecto
       });
     }
     setOpenForm(true);
@@ -139,17 +97,42 @@ export default function InventarioPage() {
     setEditingPurchase(null);
   };
 
-  const onSubmit = (data: PurchaseFormData) => {
-    // Aquí se conectaría con la API
+  const onSubmit = async (data: PurchaseFormData) => {
+    try {
+      let response;
+      const isEditing = editingPurchase !== null;
 
-    handleCloseForm();
+      if (isEditing) {
+        response = await axios.patch(
+          `${API_URL}/purchases/${editingPurchase.id}`,
+          data
+        );
+      } else {
+        response = await axios.post(`${API_URL}/purchases`, data);
+      }
+
+      if (response.status >= 400) {
+        const { message } = response.data as TResponseError;
+        toast.error(message.join(", "));
+        return;
+      }
+
+      toast.success(
+        `Compra ${isEditing ? "actualizada" : "creada"} correctamente`
+      );
+
+      handleCloseForm();
+      reloadPurchases();
+    } catch (error) {
+      toast.error("Error al procesar la compra");
+    }
   };
 
   const handleConfirmDelete = (purchase: TPurchase) => {
-    const supplierName = suppliersData.find(
+    const supplierName = suppliers?.find(
       (s) => s.id === purchase.supplier.id
     )?.name;
-    const componentName = componentsData.find(
+    const componentName = components?.find(
       (c) => c.id === purchase.component.id
     )?.name;
 
@@ -158,32 +141,51 @@ export default function InventarioPage() {
       html: `¿Desea eliminar la compra de <strong>${componentName}</strong> a <strong>${supplierName}</strong>?<br>Esta acción no se puede deshacer.`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#1976D2", // Azul
-      cancelButtonColor: "#4CAF50", // Verde
+      confirmButtonColor: "#1976D2",
+      cancelButtonColor: "#d33",
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        // Simulación de eliminación
-        setPurchases(purchases.filter((p) => p.id !== purchase.id));
+        try {
+          await axios.delete(`${API_URL}/purchases/${purchase.id}`);
 
-        // Mostrar mensaje de éxito
-        Swal.fire({
-          title: "Eliminada",
-          text: "La compra ha sido eliminada correctamente.",
-          icon: "success",
-          confirmButtonColor: "#1976D2", // Azul
-        });
+          Swal.fire({
+            title: "Eliminada",
+            text: "La compra ha sido eliminada correctamente.",
+            icon: "success",
+            confirmButtonColor: "#1976D2",
+          });
+
+          reloadPurchases();
+        } catch (error) {
+          toast.error("Error al eliminar la compra");
+        }
       }
     });
   };
 
-  const handleStatusChange = (
+  const handleStatusChange = async (
     event: SelectChangeEvent<string>,
     purchaseId: number
   ) => {
-    // Notificación de cambio de estado
+    const newStatus = event.target.value as EPurchaseStatus;
+
+    try {
+      await axios.patch(`${API_URL}/purchases/${purchaseId}`, {
+        status: newStatus,
+      });
+
+      toast.success("Estado actualizado correctamente");
+      reloadPurchases();
+    } catch (error) {
+      toast.error("Error al actualizar el estado");
+    }
   };
+
+  if (!suppliers || !purchases || !components) {
+    return <div>Cargando...</div>;
+  }
 
   return (
     <Box>
@@ -223,67 +225,82 @@ export default function InventarioPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {purchases.map((purchase) => (
-                    <TableRow key={purchase.id}>
-                      <TableCell>
-                        {
-                          suppliersData.find(
-                            (s) => s.id === purchase.supplier.id
-                          )?.name
-                        }
-                      </TableCell>
-                      <TableCell>
-                        {
-                          componentsData.find(
-                            (c) => c.id === purchase.component.id
-                          )?.name
-                        }
-                      </TableCell>
-                      <TableCell>{purchase.quantity}</TableCell>
-                      <TableCell>{formatPrice(purchase.unitPrice)}</TableCell>
-                      <TableCell>{formatDate(purchase.purchaseDate)}</TableCell>
-                      <TableCell>{formatDate(purchase.deliveryDate)}</TableCell>
-                      <TableCell>
-                        <Tooltip title={purchase.details || ""}>
-                          <span>
-                            {truncateText(purchase.details || "", 100)}
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={purchase.status}
-                          onChange={(e) => handleStatusChange(e, purchase.id)}
-                          size="small"
-                          sx={{
-                            minWidth: 120,
-                          }}
-                        >
-                          {Object.values(EPurchaseStatus).map((status) => (
-                            <MenuItem key={status} value={status}>
-                              {statusLabels[status]}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </TableCell>
-                      <TableCell sx={{ border: 0 }}>
-                        <Box display="flex" gap={1}>
-                          <Button
-                            color="green"
-                            onClick={() => handleOpenForm(purchase as any)}
+                  {purchases.length > 0 ? (
+                    purchases.map((purchase) => (
+                      <TableRow key={purchase.id}>
+                        <TableCell>
+                          {
+                            suppliers.find((s) => s.id === purchase.supplier.id)
+                              ?.name
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {
+                            components?.find(
+                              (c) => c.id === purchase.component.id
+                            )?.name
+                          }
+                        </TableCell>
+                        <TableCell>{purchase.quantity}</TableCell>
+                        <TableCell>{formatPrice(purchase.unitPrice)}</TableCell>
+                        <TableCell>
+                          {formatDate(purchase.purchaseDate)}
+                        </TableCell>
+                        <TableCell>
+                          {purchase.deliveryDate
+                            ? formatDate(purchase.deliveryDate)
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={purchase.details || ""}>
+                            <span>
+                              {truncateText(purchase.details || "", 100)}
+                            </span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={purchase.status}
+                            onChange={(e) => handleStatusChange(e, purchase.id)}
+                            size="small"
+                            sx={{ minWidth: 120 }}
                           >
-                            Editar
-                          </Button>
-                          <Button
-                            color="blue"
-                            onClick={() => handleConfirmDelete(purchase as any)}
-                          >
-                            Eliminar
-                          </Button>
-                        </Box>
+                            {Object.values(EPurchaseStatus).map((status) => (
+                              <MenuItem
+                                disabled={status == EPurchaseStatus.PENDING}
+                                key={status}
+                                value={status}
+                              >
+                                {statusLabels[status]}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Box display="flex" gap={1}>
+                            <Button
+                              color="green"
+                              onClick={() => handleOpenForm(purchase)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              color="blue"
+                              onClick={() => handleConfirmDelete(purchase)}
+                            >
+                              Eliminar
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                        No hay compras registradas
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -305,7 +322,6 @@ export default function InventarioPage() {
                 <Controller
                   name="supplierId"
                   control={control}
-                  defaultValue={0}
                   rules={{
                     required: "Este campo es obligatorio",
                     min: { value: 1, message: "Seleccione un proveedor" },
@@ -322,7 +338,7 @@ export default function InventarioPage() {
                       <MenuItem disabled value={0}>
                         <em>Seleccione un proveedor</em>
                       </MenuItem>
-                      {suppliersData.map((supplier) => (
+                      {suppliers.map((supplier) => (
                         <MenuItem key={supplier.id} value={supplier.id}>
                           {supplier.name}
                         </MenuItem>
@@ -338,7 +354,6 @@ export default function InventarioPage() {
                 <Controller
                   name="componentId"
                   control={control}
-                  defaultValue={0}
                   rules={{
                     required: "Este campo es obligatorio",
                     min: { value: 1, message: "Seleccione un componente" },
@@ -355,7 +370,7 @@ export default function InventarioPage() {
                       <MenuItem disabled value={0}>
                         <em>Seleccione un componente</em>
                       </MenuItem>
-                      {componentsData.map((component) => (
+                      {components.map((component) => (
                         <MenuItem key={component.id} value={component.id}>
                           {component.name}
                         </MenuItem>
@@ -371,7 +386,6 @@ export default function InventarioPage() {
                 <Controller
                   name="quantity"
                   control={control}
-                  defaultValue={1}
                   rules={{
                     required: "Este campo es obligatorio",
                     min: {
@@ -401,7 +415,6 @@ export default function InventarioPage() {
                 <Controller
                   name="unitPrice"
                   control={control}
-                  defaultValue={0}
                   rules={{
                     required: "Este campo es obligatorio",
                     min: {
@@ -431,7 +444,6 @@ export default function InventarioPage() {
                 <Controller
                   name="status"
                   control={control}
-                  defaultValue={EPurchaseStatus.PENDING}
                   render={({ field }) => (
                     <Select {...field} fullWidth size="small">
                       {Object.values(EPurchaseStatus).map((status) => (
@@ -444,13 +456,42 @@ export default function InventarioPage() {
                 />
               </FormControl>
             </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <FormLabel>Fecha de Compra</FormLabel>
+                <Controller
+                  name="purchaseDate"
+                  control={control}
+                  rules={{
+                    required: "Este campo es obligatorio",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <DatePicker
+                      value={field.value}
+                      onChange={(date) => field.onChange(date)}
+                      maxDate={new Date()}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: "small",
+                          error: !!fieldState.error,
+                          helperText: fieldState.error?.message,
+                        },
+                        actionBar: {
+                          actions: ["clear", "accept", "cancel", "today"],
+                        },
+                      }}
+                    />
+                  )}
+                />
+              </FormControl>
+            </Grid>
             <Grid size={{ xs: 12 }}>
               <FormControl fullWidth>
                 <FormLabel>Detalles</FormLabel>
                 <Controller
                   name="details"
                   control={control}
-                  defaultValue=""
                   render={({ field }) => (
                     <Input
                       {...field}
