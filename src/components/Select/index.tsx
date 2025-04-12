@@ -31,7 +31,7 @@ export default function Select({
 }
 
 type TProps = Readonly<
-  SelectProps & {
+  SelectProps<any> & {
     formControlProps?: Omit<FormControlProps, "fullWidth">;
     inputLabelProps?: InputLabelProps;
   }

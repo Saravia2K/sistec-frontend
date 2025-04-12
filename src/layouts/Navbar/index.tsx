@@ -81,7 +81,11 @@ export default function Navbar() {
                       <ListItemIcon>
                         <I />
                       </ListItemIcon>
-                      <ListItemText primary={text} />
+                      <ListItemText
+                        primary={
+                          <Link href={`${pages.prefix}${path}`}>{text}</Link>
+                        }
+                      />
                     </ListItemButton>
                   </ListItem>
                 ))}
@@ -109,7 +113,7 @@ export default function Navbar() {
             {pages.links.map(({ text, path }) => (
               <Button
                 key={text}
-                // onClick={handleCloseNavMenu}
+                onClick={() => setOpenDrawer(false)}
                 sx={{
                   my: 2,
                   color: "#078349",
@@ -117,7 +121,7 @@ export default function Navbar() {
                   textTransform: "none",
                 }}
               >
-                {text}
+                <Link href={`${pages.prefix}${path}`}>{text}</Link>
               </Button>
             ))}
           </Box>
