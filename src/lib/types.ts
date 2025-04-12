@@ -10,13 +10,13 @@ export type TUser = {
   name: string;
   phone: string;
   email: string;
-  //   firstLogin: boolean;
+  firstLogin: boolean;
 };
 
 export type TClient = TUser & {
-  //   id_client: number;
+  idClient: number;
   address: string;
-  registrationDate: string;
+  registrationDate: Date;
 };
 
 export type TTechnician = TUser & {
@@ -28,7 +28,7 @@ export type TTechnician = TUser & {
 export type TSupportedDevices = {
   id: number;
   name: string;
-  tickets: TTicket;
+  tickets?: TTicket;
 };
 
 export type TTicket = {
@@ -105,4 +105,10 @@ export type TPurchase = {
   devileryDate?: Date;
   details?: string;
   status: EPurchaseStatus;
+};
+
+export type TResponseError = {
+  message: string[];
+  error: string;
+  statusCode: number;
 };

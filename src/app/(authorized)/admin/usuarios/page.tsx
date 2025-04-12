@@ -20,34 +20,14 @@ import {
 import { Add as AddIcon } from "@mui/icons-material";
 import Button from "@/components/Buttton";
 import Modal from "@/components/Modal";
-import { TClient } from "@/lib/types";
-
-const clientsData = [
-  {
-    id: 1,
-    name: "Juan Pérez",
-    phone: "555-123-4567",
-    email: "juan.perez@example.com",
-    address: "Calle Principal 123",
-    registrationDate: "15/01/2025",
-  },
-  {
-    id: 2,
-    name: "María González",
-    phone: "555-987-6543",
-    email: "maria.gonzalez@example.com",
-    address: "Avenida Central 456",
-    registrationDate: "22/02/2025",
-  },
-  {
-    id: 3,
-    name: "Carlos Rodríguez",
-    phone: "555-456-7890",
-    email: "carlos.rodriguez@example.com",
-    address: "Plaza Mayor 789",
-    registrationDate: "10/03/2025",
-  },
-];
+import { TClient, TResponseError } from "@/lib/types";
+import useUsers from "@/hooks/useUsers";
+import { formatDate } from "@/lib/helpers";
+import Input from "@/components/Input";
+import axios, { AxiosResponse } from "axios";
+import { API_URL } from "@/lib/consts";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 // Tipo para el formulario
 type ClientFormData = {
@@ -55,13 +35,25 @@ type ClientFormData = {
   phone: string;
   email: string;
   address: string;
+  password: string;
 };
 
 export default function AdminUsuariosPage() {
+  const { users, usersLoading, reloadUsers } = useUsers();
   const [open, setOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<any>(null);
+  const [editingClient, setEditingClient] = useState<
+    TClient | null | undefined
+  >(null);
 
-  const { control, handleSubmit, reset } = useForm<ClientFormData>();
+  const { control, handleSubmit, reset } = useForm<ClientFormData>({
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      password: "",
+      address: "",
+    },
+  });
 
   const handleOpen = (client?: TClient) => {
     setEditingClient(client);
@@ -88,18 +80,57 @@ export default function AdminUsuariosPage() {
     setEditingClient(null);
   };
 
-  const onSubmit = (data: ClientFormData) => {
-    // Aquí se conectaría con la API
-    console.log("Form data:", data);
-    console.log("Editing client:", editingClient ? editingClient.id : "new");
+  const onSubmit = async (data: ClientFormData) => {
+    let response: AxiosResponse;
+    const isEditing = editingClient != null && editingClient != undefined;
+    if (!isEditing) {
+      response = await axios.post(`${API_URL}/clients`, data);
+    } else {
+      response = await axios.patch(
+        `${API_URL}/clients/${editingClient.id}`,
+        data
+      );
+    }
+
+    if (response.status >= 400) {
+      const { message } = response.data as TResponseError;
+      toast(message.join(", "), {
+        type: "error",
+      });
+      return;
+    }
+
+    toast(`Usuario ${isEditing ? "actualizado" : "creado"} correctamente`, {
+      type: "success",
+    });
+
+    reloadUsers();
     handleClose();
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     // Aquí se conectaría con la API para eliminar
-    console.log("Delete client with ID:", id);
+    Swal.fire({
+      title: "¿Está seguro?",
+      html: "¿Deseas eliminar este usuario de forma permanente?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#1976D2", // Azul
+      cancelButtonColor: "#4CAF50", // Verde
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await axios.delete(`${API_URL}/clients/${id}`);
+        toast("Usuario eliminado con éxito", {
+          type: "success",
+        });
+        reloadUsers();
+      }
+    });
   };
 
+  if (!users || usersLoading) return;
   return (
     <Box>
       <Box
@@ -135,13 +166,15 @@ export default function AdminUsuariosPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {clientsData.map((client) => (
+                  {users.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell>{client.name}</TableCell>
                       <TableCell>{client.phone}</TableCell>
                       <TableCell>{client.email}</TableCell>
                       <TableCell>{client.address}</TableCell>
-                      <TableCell>{client.registrationDate}</TableCell>
+                      <TableCell>
+                        {formatDate(client.registrationDate)}
+                      </TableCell>
                       <TableCell>
                         <Box display="flex" gap={1}>
                           <Button
@@ -184,7 +217,7 @@ export default function AdminUsuariosPage() {
                     defaultValue=""
                     rules={{ required: "Este campo es obligatorio" }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
@@ -205,7 +238,7 @@ export default function AdminUsuariosPage() {
                     defaultValue=""
                     rules={{ required: "Este campo es obligatorio" }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
@@ -232,7 +265,7 @@ export default function AdminUsuariosPage() {
                       },
                     }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
@@ -246,14 +279,40 @@ export default function AdminUsuariosPage() {
               </Grid>
               <Grid size={{ xs: 12 }}>
                 <FormControl fullWidth>
+                  <FormLabel>Contraseña</FormLabel>
+                  <Controller
+                    name="password"
+                    control={control}
+                    defaultValue=""
+                    rules={{
+                      required:
+                        editingClient == null
+                          ? "Este campo es obligatorio"
+                          : undefined,
+                    }}
+                    render={({ field, fieldState }) => (
+                      <Input
+                        {...field}
+                        fullWidth
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                        placeholder="Nombre completo"
+                        size="small"
+                        type="password"
+                      />
+                    )}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <FormControl fullWidth>
                   <FormLabel>Dirección</FormLabel>
                   <Controller
                     name="address"
                     control={control}
                     defaultValue=""
-                    rules={{ required: "Este campo es obligatorio" }}
                     render={({ field, fieldState }) => (
-                      <TextField
+                      <Input
                         {...field}
                         fullWidth
                         error={!!fieldState.error}
