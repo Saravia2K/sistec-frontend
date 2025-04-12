@@ -21,32 +21,11 @@ import { Add as AddIcon } from "@mui/icons-material";
 import Button from "@/components/Buttton";
 import Modal from "@/components/Modal";
 import Input from "@/components/Input";
-import type { TSupplier } from "@/lib/types";
-
-// Datos de ejemplo basados en el modelo de Prisma
-const suppliersData = [
-  {
-    id: 1,
-    name: "Electrónica Global",
-    phone: "555-123-4567",
-    email: "contacto@electronicaglobal.com",
-    address: "Av. Tecnología 123, Ciudad Industrial",
-  },
-  {
-    id: 2,
-    name: "Componentes Rápidos",
-    phone: "555-987-6543",
-    email: "ventas@componentesrapidos.com",
-    address: "Calle Circuito 456, Zona Comercial",
-  },
-  {
-    id: 3,
-    name: "Suministros Tech",
-    phone: "555-456-7890",
-    email: "info@suministrostech.com",
-    address: "Plaza Digital 789, Sector Empresarial",
-  },
-];
+import type { TResponseError, TSupplier } from "@/lib/types";
+import useSuppliers from "@/hooks/useSuppliers";
+import { toast } from "react-toastify";
+import axios, { AxiosResponse } from "axios";
+import { API_URL } from "@/lib/consts";
 
 // Tipo para el formulario basado en el modelo de Prisma
 type SupplierFormData = {
@@ -57,6 +36,7 @@ type SupplierFormData = {
 };
 
 export default function PrveedoresPage() {
+  const { suppliers, suppliersLoading, reloadSuppliers } = useSuppliers();
   const [openForm, setOpenForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<TSupplier | null>(
     null
@@ -89,24 +69,31 @@ export default function PrveedoresPage() {
     setEditingSupplier(null);
   };
 
-  const onSubmit = (data: SupplierFormData) => {
-    // Aquí se conectaría con la API
-    console.log("Form data:", data);
-    console.log(
-      "Editing supplier:",
-      editingSupplier ? editingSupplier.id : "new"
-    );
+  const onSubmit = async (data: SupplierFormData) => {
+    let response: AxiosResponse;
+    const isEditing = editingSupplier != null && editingSupplier != undefined;
+    if (!isEditing) {
+      response = await axios.post(`${API_URL}/suppliers`, data);
+    } else {
+      response = await axios.patch(
+        `${API_URL}/suppliers/${editingSupplier.id}`,
+        data
+      );
+    }
 
-    // Mostrar mensaje de éxito con SweetAlert2
-    Swal.fire({
-      title: editingSupplier ? "Proveedor Actualizado" : "Proveedor Creado",
-      text: editingSupplier
-        ? `El proveedor ${data.name} ha sido actualizado correctamente.`
-        : `El proveedor ${data.name} ha sido creado correctamente.`,
-      icon: "success",
-      confirmButtonColor: "#4CAF50", // Verde
+    if (response.status >= 400) {
+      const { message } = response.data as TResponseError;
+      toast(message.join(", "), {
+        type: "error",
+      });
+      return;
+    }
+
+    toast(`Proveedor ${isEditing ? "actualizado" : "creado"} correctamente`, {
+      type: "success",
     });
 
+    reloadSuppliers();
     handleCloseForm();
   };
 
@@ -120,12 +107,11 @@ export default function PrveedoresPage() {
       cancelButtonColor: "#4CAF50", // Verde
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        // Aquí se conectaría con la API para eliminar
-        console.log("Delete supplier with ID:", supplier.id);
+        await axios.delete(`${API_URL}/suppliers/${supplier.id}`);
 
-        // Mostrar mensaje de éxito
+        reloadSuppliers();
         Swal.fire({
           title: "Eliminado",
           text: `El proveedor ${supplier.name} ha sido eliminado.`,
@@ -136,6 +122,7 @@ export default function PrveedoresPage() {
     });
   };
 
+  if (!suppliers || suppliersLoading) return;
   return (
     <Box>
       <Box
@@ -170,7 +157,7 @@ export default function PrveedoresPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {suppliersData.map((supplier) => (
+                  {suppliers.map((supplier) => (
                     <TableRow key={supplier.id}>
                       <TableCell>{supplier.name}</TableCell>
                       <TableCell>{supplier.phone}</TableCell>
