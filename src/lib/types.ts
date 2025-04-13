@@ -42,7 +42,7 @@ export type TTicket = {
   priority: ETicketPriority;
   model?: string;
   serialNumber?: string;
-  requestDate?: Date;
+  requestDate: Date;
   closeDate?: Date;
   repair: TRepair;
 };

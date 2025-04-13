@@ -30,19 +30,10 @@ import Input from "@/components/Input";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { TRepair, TUsedComponents } from "@/lib/types";
+import { TRepair } from "@/lib/types";
 import Select from "@/components/Select";
-
-// Datos de ejemplo del ticket
-const ticketData = {
-  id: 1,
-  deviceType: "Laptop",
-  brand: "HP",
-  model: "Pavilion 15",
-  serialNumber: "HP78945612",
-  problemDescription:
-    "El equipo no enciende correctamente. Se queda en la pantalla de inicio y luego se apaga. Ya se intentó reiniciar varias veces sin éxito.",
-};
+import useTicket from "@/hooks/useTicket";
+import { useParams } from "next/navigation";
 
 // Tipo para el formulario de reparación
 type RepairFormData = Pick<
@@ -51,6 +42,8 @@ type RepairFormData = Pick<
 > & { usedComponents: { componentStockId: number; quantity: number }[] };
 
 export default function TechnicianTicket() {
+  const { id } = useParams<{ id: string }>();
+  const { ticket } = useTicket(+id);
   const [totalCost, setTotalCost] = useState(0);
   const [selectedComponentId, setSelectedComponentId] = useState(1);
   const [selectedComponentQuantity, setSelectedComponentQuantity] = useState(1);
@@ -98,6 +91,7 @@ export default function TechnicianTicket() {
     // Aquí iría la lógica para guardar en la base de datos
   };
 
+  if (!ticket) return;
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" mb={3}>
@@ -109,7 +103,7 @@ export default function TechnicianTicket() {
         <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>
             <Typography variant="h6" fontWeight="bold" mb={2}>
-              Información del Ticket #{ticketData.id}
+              Información del Ticket #{ticket.id}
             </Typography>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -118,7 +112,7 @@ export default function TechnicianTicket() {
                     Tipo de Dispositivo
                   </Typography>
                   <Typography variant="body1">
-                    {ticketData.deviceType}
+                    {ticket.deviceType.name}
                   </Typography>
                 </Box>
               </Grid>
@@ -127,7 +121,7 @@ export default function TechnicianTicket() {
                   <Typography variant="subtitle2" color="text.secondary">
                     Marca
                   </Typography>
-                  <Typography variant="body1">{ticketData.brand}</Typography>
+                  <Typography variant="body1">{ticket.brand}</Typography>
                 </Box>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -135,7 +129,7 @@ export default function TechnicianTicket() {
                   <Typography variant="subtitle2" color="text.secondary">
                     Modelo
                   </Typography>
-                  <Typography variant="body1">{ticketData.model}</Typography>
+                  <Typography variant="body1">{ticket.model}</Typography>
                 </Box>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -143,9 +137,7 @@ export default function TechnicianTicket() {
                   <Typography variant="subtitle2" color="text.secondary">
                     Número de Serie
                   </Typography>
-                  <Typography variant="body1">
-                    {ticketData.serialNumber}
-                  </Typography>
+                  <Typography variant="body1">{ticket.serialNumber}</Typography>
                 </Box>
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -154,7 +146,7 @@ export default function TechnicianTicket() {
                     Descripción del Problema
                   </Typography>
                   <Typography variant="body1">
-                    {ticketData.problemDescription}
+                    {ticket.problemDescription}
                   </Typography>
                 </Box>
               </Grid>

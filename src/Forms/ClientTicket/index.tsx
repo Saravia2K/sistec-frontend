@@ -1,3 +1,5 @@
+"use client";
+
 import { usePathname, useRouter } from "next/navigation";
 import { Grid, Paper, FormControl, FormLabel, MenuItem } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
@@ -6,14 +8,10 @@ import Input from "@/components/Input";
 import Select from "@/components/Select";
 import { TTicket } from "@/lib/types";
 import Swal from "sweetalert2";
-
-const supportedDevices = [
-  { id: 1, name: "Laptop" },
-  { id: 2, name: "Desktop" },
-  { id: 3, name: "Tablet" },
-  { id: 4, name: "Smartphone" },
-  { id: 5, name: "Impresora" },
-];
+import axios from "axios";
+import { useAuth } from "@/hooks/useAuth";
+import useSupportedDevices from "@/hooks/useSupportedDevices";
+import { API_URL } from "@/lib/consts";
 
 type SupportTicketFormData = Pick<
   TTicket,
@@ -25,11 +23,13 @@ type SupportTicketFormData = Pick<
 export default function ClientTicket({ ticket, watch }: TProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { token, user } = useAuth();
   const isEditing = ticket != undefined;
+  const { devices, isLoading: devicesLoading } = useSupportedDevices();
 
   const { control, handleSubmit, reset } = useForm<SupportTicketFormData>({
     defaultValues: {
-      deviceTypeId: ticket?.deviceTypeId,
+      deviceTypeId: ticket?.deviceTypeId ?? 0,
       brand: ticket?.brand ?? "",
       problemDescription: ticket?.problemDescription ?? "",
       model: ticket?.model ?? "",
@@ -37,18 +37,51 @@ export default function ClientTicket({ ticket, watch }: TProps) {
     },
   });
 
-  const onSubmit = (data: SupportTicketFormData) => {
-    // Aquí se conectaría con la API para guardar el ticket
-    console.log("Form data:", data);
+  const onSubmit = async (data: SupportTicketFormData) => {
+    try {
+      const ticketData = {
+        ...data,
+        customerId: user?.id,
+      };
 
-    // Resetear el formulario después de enviar
-    if (!isEditing) {
-      reset();
+      if (isEditing) {
+        await axios.patch(`${API_URL}/tickets/${ticket.id}`, ticketData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Swal.fire(
+          "¡Actualizado!",
+          "El ticket ha sido actualizado correctamente.",
+          "success"
+        );
+      } else {
+        await axios.post(`${API_URL}/tickets`, ticketData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Swal.fire(
+          "¡Creado!",
+          "El ticket ha sido creado correctamente.",
+          "success"
+        );
+      }
+
+      if (!isEditing) {
+        reset();
+      }
+      router.push("/cliente/tickets");
+    } catch (error) {
+      console.error("Error:", error);
+      Swal.fire("Error", "Ocurrió un error al procesar tu solicitud", "error");
     }
   };
 
-  const handleDelete = () => {
-    Swal.fire({
+  const handleDelete = async () => {
+    if (!ticket) return;
+
+    const result = await Swal.fire({
       title: "¿Estás seguro?",
       text: "¡No podrás revertir esta acción!",
       icon: "warning",
@@ -57,16 +90,34 @@ export default function ClientTicket({ ticket, watch }: TProps) {
       cancelButtonColor: "#d33",
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
-    }).then((result) => {
-      if (result.isConfirmed) {
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/tickets/${ticket.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         Swal.fire(
           "¡Eliminado!",
           "El ticket ha sido eliminado correctamente.",
           "success"
         );
+        router.push("/cliente/tickets");
+      } catch (error) {
+        console.error("Error:", error);
+        Swal.fire("Error", "Ocurrió un error al eliminar el ticket", "error");
       }
-    });
+    }
   };
+
+  if (devicesLoading) {
+    return <div>Cargando dispositivos...</div>;
+  }
 
   return (
     <Paper sx={{ p: 3, borderRadius: 5 }}>
@@ -87,12 +138,11 @@ export default function ClientTicket({ ticket, watch }: TProps) {
                     displayEmpty
                     disabled={watch}
                     error={!!fieldState.error}
-                    //   helperText={fieldState.error?.message}
                   >
                     <MenuItem disabled value="">
                       <em>Seleccione un dispositivo</em>
                     </MenuItem>
-                    {supportedDevices.map((device) => (
+                    {devices.map((device) => (
                       <MenuItem key={device.id} value={device.id}>
                         {device.name}
                       </MenuItem>
@@ -103,6 +153,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
             </FormControl>
           </Grid>
 
+          {/* Resto del formulario se mantiene igual */}
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
               <FormLabel>Marca *</FormLabel>

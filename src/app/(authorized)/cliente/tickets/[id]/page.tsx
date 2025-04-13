@@ -1,12 +1,15 @@
 "use client";
 
 import ClientTicket from "@/Forms/ClientTicket";
+import useTicket from "@/hooks/useTicket";
 import { Typography } from "@mui/material";
 import { useParams } from "next/navigation";
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { ticket } = useTicket(+id);
 
+  if (!ticket) return;
   return (
     <>
       <Typography variant="h4" fontWeight="bold" mb={3}>
@@ -16,12 +19,12 @@ export default function TicketDetailPage() {
       <ClientTicket
         watch
         ticket={{
-          brand: "Marca",
-          deviceTypeId: 1,
-          id: 1,
-          problemDescription: "Descripción del problema",
-          model: "Modelo",
-          serialNumber: "Número de serie",
+          brand: ticket.brand,
+          deviceTypeId: ticket.deviceType.id,
+          id: ticket.id,
+          problemDescription: ticket.problemDescription,
+          model: ticket.model,
+          serialNumber: ticket.serialNumber,
         }}
       />
     </>

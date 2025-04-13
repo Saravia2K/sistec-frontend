@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import Image from "next/image";
 import {
   Box,
@@ -28,14 +28,32 @@ import links from "./links";
 
 import logotype_sistec from "@/assets/images/logotype_sistec.png";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar() {
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [openDrawer, setOpenDrawer] = useState(false);
   const [pages, setPages] = useState(links.admin);
+  const { logout, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user?.customer != null) {
+      setPages(links.cliente);
+    } else if (user?.technician != null) {
+      setPages(links.soporte);
+    }
+  }, [user]);
 
   const handleOpenUserMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
+  };
+
+  const handleLogoutClick = () => {
+    logout();
+    router.push("/login");
+    handleCloseUserMenu();
   };
 
   const handleCloseUserMenu = () => {
@@ -148,13 +166,11 @@ export default function Navbar() {
               open={Boolean(anchorElUser)}
               onClose={handleCloseUserMenu}
             >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography sx={{ textAlign: "center" }}>
-                    {setting}
-                  </Typography>
-                </MenuItem>
-              ))}
+              <MenuItem onClick={handleLogoutClick}>
+                <Typography sx={{ textAlign: "center" }}>
+                  Cerrar Sesión
+                </Typography>
+              </MenuItem>
             </Menu>
           </Box>
         </Toolbar>
@@ -162,5 +178,3 @@ export default function Navbar() {
     </AppBar>
   );
 }
-
-const settings = ["Profile", "Account", "Dashboard", "Logout"];

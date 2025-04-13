@@ -9,6 +9,7 @@ export default function Button({
   type,
   onClick,
   buttonType,
+  disabled,
 }: TProps) {
   const _color = COLORS[color.toUpperCase() as keyof typeof COLORS];
   return (
@@ -28,6 +29,7 @@ export default function Button({
       }}
       onClick={onClick}
       type={buttonType}
+      disabled={disabled}
     />
   );
 }
@@ -38,4 +40,5 @@ type TProps = PropsWithChildren<{
   type?: "table" | "outlined";
   onClick?: () => void;
   buttonType?: "submit" | "reset" | "button";
+  disabled?: boolean;
 }>;

@@ -123,7 +123,7 @@ export default function InventarioPage() {
 
       handleCloseForm();
       reloadPurchases();
-    } catch (error) {
+    } catch (_) {
       toast.error("Error al procesar la compra");
     }
   };
@@ -158,7 +158,7 @@ export default function InventarioPage() {
           });
 
           reloadPurchases();
-        } catch (error) {
+        } catch (_) {
           toast.error("Error al eliminar la compra");
         }
       }
@@ -178,7 +178,7 @@ export default function InventarioPage() {
 
       toast.success("Estado actualizado correctamente");
       reloadPurchases();
-    } catch (error) {
+    } catch (_) {
       toast.error("Error al actualizar el estado");
     }
   };

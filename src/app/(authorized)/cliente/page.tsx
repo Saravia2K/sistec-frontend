@@ -13,6 +13,8 @@ import {
   Typography,
   TableContainer,
   Stack,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -25,39 +27,41 @@ import {
 import StatCard from "@/components/StatCard";
 import Button from "@/components/Buttton";
 import { COLORS } from "@/lib/consts";
-
-// Datos de ejemplo
-const requestsData = [
-  {
-    id: 1,
-    type: "laptop",
-    date: "29 / 03 / 2025",
-    agent: "luis",
-    status: "En progreso",
-  },
-  {
-    id: 2,
-    type: "batería",
-    date: "29 / 03 / 2025",
-    agent: "jaime",
-    status: "En progreso",
-  },
-  {
-    id: 3,
-    type: "procesador",
-    date: "29 / 03 / 2025",
-    agent: "tulio",
-    status: "En progreso",
-  },
-];
+import useClientDashboard from "@/hooks/useClientDashboard";
+import { useAuth } from "@/hooks/useAuth";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function ClientePage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { dashboardData, isLoading, error, refetch } = useClientDashboard();
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, "dd / MM / yyyy", { locale: es });
+  };
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" mt={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        Error al cargar los datos del dashboard: {(error as Error).message}
+      </Alert>
+    );
+  }
 
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" mb={3}>
-        Bienvenido cliente
+        Bienvenido {user?.name}
       </Typography>
 
       <Grid container spacing={3}>
@@ -76,7 +80,7 @@ export default function ClientePage() {
                     fontWeight="bold"
                     mb={1}
                   >
-                    Hola, Cliente
+                    Hola, {user?.name.split(" ")[0]}
                   </Typography>
                   <Typography variant="body2">
                     Echa un vistazo a tus solicitudes
@@ -106,13 +110,17 @@ export default function ClientePage() {
                     Crea una solicitud
                   </Typography>
                   <Typography variant="body2">
-                    Tienes algún problema?
+                    ¿Tienes algún problema?
                   </Typography>
                   <Typography variant="body2">
                     Te ayudaremos a resolverlo.
                   </Typography>
                 </Box>
-                <Button color="green" icon>
+                <Button
+                  color="green"
+                  icon
+                  onClick={() => router.push("/cliente/nueva-solicitud")}
+                >
                   <AddIcon />
                 </Button>
               </Box>
@@ -136,7 +144,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<ListIcon />}
-                  count={10}
+                  count={dashboardData?.totalTickets || 0}
                   label="Total"
                   color="#1a237e"
                 />
@@ -144,7 +152,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<AccessTimeIcon />}
-                  count={5}
+                  count={dashboardData?.byStatus.pending || 0}
                   label="Pendientes"
                   color="#1a237e"
                 />
@@ -152,7 +160,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<SettingsIcon />}
-                  count={3}
+                  count={dashboardData?.byStatus.inProgress || 0}
                   label="En Proceso"
                   color="#1a237e"
                 />
@@ -160,7 +168,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<CheckCircleIcon />}
-                  count={2}
+                  count={dashboardData?.byStatus.completed || 0}
                   label="Finalizados"
                   color="#1a237e"
                 />
@@ -179,36 +187,51 @@ export default function ClientePage() {
                     <TableCell>ID solicitud</TableCell>
                     <TableCell>Tipo</TableCell>
                     <TableCell>Fecha</TableCell>
-                    <TableCell>Agente</TableCell>
+                    <TableCell>Técnico</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {requestsData.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell>{request.id}</TableCell>
-                      <TableCell>{request.type}</TableCell>
-                      <TableCell>{request.date}</TableCell>
-                      <TableCell>{request.agent}</TableCell>
-                      <TableCell>{request.status}</TableCell>
-                      <TableCell>
-                        <Button
-                          color="green"
-                          icon
-                          type="outlined"
-                          onClick={() =>
-                            router.push(`/cliente/tickets/${request.id}`)
-                          }
-                        >
-                          <ArrowForwardIcon
-                            fontSize="small"
-                            style={{ color: COLORS.GREEN }}
-                          />
-                        </Button>
+                  {dashboardData?.recentRequests?.length ? (
+                    dashboardData.recentRequests.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell>{request.id}</TableCell>
+                        <TableCell>{request.deviceType.name}</TableCell>
+                        <TableCell>{formatDate(request.requestDate)}</TableCell>
+                        <TableCell>
+                          {request.assignedTechnician?.user.name ||
+                            "Sin asignar"}
+                        </TableCell>
+                        <TableCell>
+                          {request.status === "pending" && "Pendiente"}
+                          {request.status === "inProgress" && "En progreso"}
+                          {request.status === "completed" && "Completado"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            color="green"
+                            icon
+                            type="outlined"
+                            onClick={() =>
+                              router.push(`/cliente/tickets/${request.id}`)
+                            }
+                          >
+                            <ArrowForwardIcon
+                              fontSize="small"
+                              style={{ color: COLORS.GREEN }}
+                            />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        No hay solicitudes recientes
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
