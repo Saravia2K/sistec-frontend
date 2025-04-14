@@ -343,36 +343,26 @@ export default function TicketsTable({ data, role }: TicketsTableProps) {
             </Link>
 
             {/* Mostrar opciones según rol */}
-            {role === "admin"
-              ? // Admin solo puede eliminar tickets pendientes
-                ticket.status === ETicketStatus.PENDING && (
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(ticket.id)}
-                    sx={{ color: "#f44336" }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                )
-              : role === "support"
-              ? // Soporte puede editar tickets pendientes o en progreso
-                [ETicketStatus.PENDING, ETicketStatus.IN_PROGRESS].includes(
-                  ticket.status
-                ) && (
-                  <Link href={`${pathname}/${ticket.id}/editar`}>
-                    <IconButton size="small" sx={{ color: "#ff9800" }}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Link>
-                )
-              : // Cliente puede ver y editar sus tickets pendientes
-                ticket.status === ETicketStatus.PENDING && (
-                  <Link href={`${pathname}/${ticket.id}/editar`}>
-                    <IconButton size="small" sx={{ color: "#ff9800" }}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Link>
-                )}
+            {role === "admin" ? (
+              // Admin solo puede eliminar tickets pendientes
+              ticket.status === ETicketStatus.PENDING && (
+                <IconButton
+                  size="small"
+                  onClick={() => handleDelete(ticket.id)}
+                  sx={{ color: "#f44336" }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              )
+            ) : role === "client" && ticket.status === ETicketStatus.PENDING ? (
+              <Link href={`${pathname}/${ticket.id}/editar`}>
+                <IconButton size="small" sx={{ color: "#ff9800" }}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Link>
+            ) : (
+              <></>
+            )}
           </Box>
         ),
       },

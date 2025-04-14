@@ -12,6 +12,7 @@
     "@emotion/cache": "~11.14.0",
     "@emotion/react": "~11.14.0",
     "@emotion/styled": "~11.14.0",
+    "@hookform/resolvers": "~5.0.1",
     "@mui/icons-material": "~7.0.1",
     "@mui/material": "~7.0.1",
     "@mui/material-nextjs": "~7.0.0",
@@ -30,6 +31,7 @@
     "react-hook-form": "~7.55.0",
     "react-toastify": "~11.0.5",
     "sweetalert2": "~11.17.2",
+    "yup": "~1.6.1",
     "zustand": "~5.0.3"
   },
   "devDependencies": {

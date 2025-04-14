@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { toast } from "react-toastify";
+import axios from "axios";
 import {
   Box,
   Grid,
@@ -29,10 +33,8 @@ import { formatDate, formatPrice, truncateText } from "@/lib/helpers";
 import Select from "@/components/Select";
 import Input from "@/components/Input";
 import useSuppliers from "@/hooks/useSuppliers";
-import axios from "axios";
 import { API_URL } from "@/lib/consts";
-import { toast } from "react-toastify";
-import usePurchases from "@/hooks/usePurchases";
+import usePurchases, { TPurchaseResponseItem } from "@/hooks/usePurchases";
 import useComponents from "@/hooks/useComponents";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
@@ -60,56 +62,52 @@ export default function InventarioPage() {
   const { purchases, reloadPurchases } = usePurchases();
   const { components } = useComponents();
   const [openForm, setOpenForm] = useState(false);
-  const [editingPurchase, setEditingPurchase] = useState<TPurchase | null>(
-    null
-  );
 
-  const { control, handleSubmit, reset } = useForm<PurchaseFormData>();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<PurchaseFormData>({
+    resolver: yupResolver(purchaseSchema),
+    defaultValues: {
+      supplierId: 0,
+      componentId: 0,
+      quantity: 1,
+      unitPrice: 0,
+      details: "",
+      status: EPurchaseStatus.PENDING,
+      purchaseDate: new Date(),
+    },
+  });
 
-  const handleOpenForm = (purchase: TPurchase | null = null) => {
-    setEditingPurchase(purchase);
-    if (purchase) {
-      reset({
-        supplierId: purchase.supplier.id,
-        componentId: purchase.component.id,
-        quantity: purchase.quantity,
-        unitPrice: purchase.unitPrice,
-        details: purchase.details || "",
-        status: purchase.status,
-        purchaseDate: new Date(purchase.purchaseDate), // Convertir string a Date
-      });
-    } else {
-      reset({
-        supplierId: 0,
-        componentId: 0,
-        quantity: 1,
-        unitPrice: 0,
-        details: "",
-        status: EPurchaseStatus.PENDING,
-        purchaseDate: new Date(), // Fecha actual por defecto
-      });
-    }
+  const handleOpenForm = () => {
+    reset({
+      supplierId: 0,
+      componentId: 0,
+      quantity: 1,
+      unitPrice: 0,
+      details: "",
+      status: EPurchaseStatus.PENDING,
+      purchaseDate: new Date(), // Fecha actual por defecto
+    });
     setOpenForm(true);
   };
 
   const handleCloseForm = () => {
     setOpenForm(false);
-    setEditingPurchase(null);
   };
 
   const onSubmit = async (data: PurchaseFormData) => {
     try {
-      let response;
-      const isEditing = editingPurchase !== null;
+      // Convertir los campos numéricos de string a number
+      const payload = {
+        ...data,
+        quantity: Number(data.quantity),
+        unitPrice: Number(data.unitPrice),
+      };
 
-      if (isEditing) {
-        response = await axios.patch(
-          `${API_URL}/purchases/${editingPurchase.id}`,
-          data
-        );
-      } else {
-        response = await axios.post(`${API_URL}/purchases`, data);
-      }
+      let response = await axios.post(`${API_URL}/purchases`, payload);
 
       if (response.status >= 400) {
         const { message } = response.data as TResponseError;
@@ -117,9 +115,7 @@ export default function InventarioPage() {
         return;
       }
 
-      toast.success(
-        `Compra ${isEditing ? "actualizada" : "creada"} correctamente`
-      );
+      toast.success(`Compra creada correctamente`);
 
       handleCloseForm();
       reloadPurchases();
@@ -172,7 +168,7 @@ export default function InventarioPage() {
     const newStatus = event.target.value as EPurchaseStatus;
 
     try {
-      await axios.patch(`${API_URL}/purchases/${purchaseId}`, {
+      await axios.patch(`${API_URL}/purchases/${purchaseId}/status`, {
         status: newStatus,
       });
 
@@ -181,6 +177,34 @@ export default function InventarioPage() {
     } catch (_) {
       toast.error("Error al actualizar el estado");
     }
+  };
+
+  const showStateOption = (
+    status: EPurchaseStatus,
+    purchase: TPurchaseResponseItem
+  ) => {
+    const isPending = status == EPurchaseStatus.PENDING;
+    const isCancelAndNotCompletedEitherReturned =
+      status == EPurchaseStatus.CANCELED &&
+      ![EPurchaseStatus.COMPLETED, EPurchaseStatus.RETURNED].includes(
+        purchase.status
+      );
+    const isReturnedAndPurchaseCompletedAndNotUsed =
+      status == EPurchaseStatus.RETURNED &&
+      purchase.status == EPurchaseStatus.COMPLETED &&
+      !purchase.used;
+    const isCompletedAndPurchaseIsPendingOrCompleted =
+      status == EPurchaseStatus.COMPLETED &&
+      [EPurchaseStatus.PENDING, EPurchaseStatus.COMPLETED].includes(
+        purchase.status
+      );
+
+    return (
+      isPending ||
+      isCancelAndNotCompletedEitherReturned ||
+      isReturnedAndPurchaseCompletedAndNotUsed ||
+      isCompletedAndPurchaseIsPendingOrCompleted
+    );
   };
 
   if (!suppliers || !purchases || !components) {
@@ -259,38 +283,46 @@ export default function InventarioPage() {
                           </Tooltip>
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={purchase.status}
-                            onChange={(e) => handleStatusChange(e, purchase.id)}
-                            size="small"
-                            sx={{ minWidth: 120 }}
-                          >
-                            {Object.values(EPurchaseStatus).map((status) => (
-                              <MenuItem
-                                disabled={status == EPurchaseStatus.PENDING}
-                                key={status}
-                                value={status}
-                              >
-                                {statusLabels[status]}
-                              </MenuItem>
-                            ))}
-                          </Select>
+                          {purchase.status == EPurchaseStatus.CANCELED ||
+                          purchase.status == EPurchaseStatus.RETURNED ? (
+                            statusLabels[purchase.status]
+                          ) : (
+                            <Select
+                              value={purchase.status}
+                              onChange={(e) =>
+                                handleStatusChange(e, purchase.id)
+                              }
+                              size="small"
+                              sx={{ minWidth: 120 }}
+                            >
+                              {Object.values(EPurchaseStatus).map(
+                                (status) =>
+                                  showStateOption(status, purchase) && (
+                                    <MenuItem
+                                      disabled={
+                                        status == EPurchaseStatus.PENDING
+                                      }
+                                      key={status}
+                                      value={status}
+                                    >
+                                      {statusLabels[status]}
+                                    </MenuItem>
+                                  )
+                              )}
+                            </Select>
+                          )}
                         </TableCell>
                         <TableCell>
-                          <Box display="flex" gap={1}>
-                            <Button
-                              color="green"
-                              onClick={() => handleOpenForm(purchase)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              color="blue"
-                              onClick={() => handleConfirmDelete(purchase)}
-                            >
-                              Eliminar
-                            </Button>
-                          </Box>
+                          {purchase.status == EPurchaseStatus.PENDING && (
+                            <Box display="flex" gap={1}>
+                              <Button
+                                color="blue"
+                                onClick={() => handleConfirmDelete(purchase)}
+                              >
+                                Eliminar
+                              </Button>
+                            </Box>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
@@ -309,11 +341,7 @@ export default function InventarioPage() {
       </Grid>
 
       {/* Modal para crear/editar compra */}
-      <Modal
-        open={openForm}
-        onClose={handleCloseForm}
-        title={editingPurchase ? "Editar Compra" : "Nueva Compra"}
-      >
+      <Modal open={openForm} onClose={handleCloseForm} title="Nueva Compra">
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -322,15 +350,11 @@ export default function InventarioPage() {
                 <Controller
                   name="supplierId"
                   control={control}
-                  rules={{
-                    required: "Este campo es obligatorio",
-                    min: { value: 1, message: "Seleccione un proveedor" },
-                  }}
-                  render={({ field, fieldState }) => (
+                  render={({ field }) => (
                     <Select
                       {...field}
                       fullWidth
-                      error={!!fieldState.error}
+                      error={!!errors.supplierId}
                       displayEmpty
                       size="small"
                       onChange={(e) => field.onChange(Number(e.target.value))}
@@ -354,15 +378,11 @@ export default function InventarioPage() {
                 <Controller
                   name="componentId"
                   control={control}
-                  rules={{
-                    required: "Este campo es obligatorio",
-                    min: { value: 1, message: "Seleccione un componente" },
-                  }}
-                  render={({ field, fieldState }) => (
+                  render={({ field }) => (
                     <Select
                       {...field}
                       fullWidth
-                      error={!!fieldState.error}
+                      error={!!errors.componentId}
                       displayEmpty
                       size="small"
                       onChange={(e) => field.onChange(Number(e.target.value))}
@@ -386,24 +406,22 @@ export default function InventarioPage() {
                 <Controller
                   name="quantity"
                   control={control}
-                  rules={{
-                    required: "Este campo es obligatorio",
-                    min: {
-                      value: 1,
-                      message: "La cantidad debe ser al menos 1",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
+                  render={({ field }) => (
                     <Input
                       {...field}
                       fullWidth
-                      type="number"
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message}
+                      type="text" // Cambiado a tipo texto
+                      error={!!errors.quantity}
+                      helperText={errors.quantity?.message}
                       placeholder="Cantidad"
                       size="small"
-                      slotProps={{ htmlInput: { min: 1 } }}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onChange={(e) => {
+                        // Validar que solo sean números
+                        const value = e.target.value;
+                        if (value === "" || /^[0-9]*$/.test(value)) {
+                          field.onChange(value);
+                        }
+                      }}
                     />
                   )}
                 />
@@ -415,24 +433,22 @@ export default function InventarioPage() {
                 <Controller
                   name="unitPrice"
                   control={control}
-                  rules={{
-                    required: "Este campo es obligatorio",
-                    min: {
-                      value: 0.01,
-                      message: "El precio debe ser mayor a 0",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
+                  render={({ field }) => (
                     <Input
                       {...field}
                       fullWidth
-                      type="number"
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message}
+                      type="text" // Cambiado a tipo texto
+                      error={!!errors.unitPrice}
+                      helperText={errors.unitPrice?.message}
                       placeholder="0.00"
                       size="small"
-                      slotProps={{ htmlInput: { min: 0.01, step: 0.01 } }}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onChange={(e) => {
+                        // Validar que solo sean números con decimales
+                        const value = e.target.value;
+                        if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+                          field.onChange(value);
+                        }
+                      }}
                     />
                   )}
                 />
@@ -462,10 +478,7 @@ export default function InventarioPage() {
                 <Controller
                   name="purchaseDate"
                   control={control}
-                  rules={{
-                    required: "Este campo es obligatorio",
-                  }}
-                  render={({ field, fieldState }) => (
+                  render={({ field }) => (
                     <DatePicker
                       value={field.value}
                       onChange={(date) => field.onChange(date)}
@@ -474,12 +487,15 @@ export default function InventarioPage() {
                         textField: {
                           fullWidth: true,
                           size: "small",
-                          error: !!fieldState.error,
-                          helperText: fieldState.error?.message,
+                          error: !!errors.purchaseDate,
+                          helperText: errors.purchaseDate?.message,
                         },
                         actionBar: {
                           actions: ["clear", "accept", "cancel", "today"],
                         },
+                      }}
+                      slots={{
+                        textField: Input,
                       }}
                     />
                   )}
@@ -518,7 +534,7 @@ export default function InventarioPage() {
                 Cancelar
               </Button>
               <Button color="green" buttonType="submit">
-                {editingPurchase ? "Actualizar" : "Guardar"}
+                Guardar
               </Button>
             </Grid>
           </Grid>
@@ -527,3 +543,32 @@ export default function InventarioPage() {
     </Box>
   );
 }
+
+const purchaseSchema = yup.object().shape({
+  supplierId: yup
+    .number()
+    .required("Proveedor es obligatorio")
+    .min(1, "Seleccione un proveedor"),
+  componentId: yup
+    .number()
+    .required("Componente es obligatorio")
+    .min(1, "Seleccione un componente"),
+  quantity: yup
+    .number()
+    .transform((value) => (isNaN(value) ? undefined : value))
+    .required("Cantidad es obligatoria")
+    .min(1, "La cantidad debe ser al menos 1")
+    .typeError("Debe ser un número válido"),
+  unitPrice: yup
+    .number()
+    .transform((value) => (isNaN(value) ? undefined : value))
+    .required("Precio unitario es obligatorio")
+    .min(0.01, "El precio debe ser mayor a 0")
+    .typeError("Debe ser un número válido"),
+  details: yup.string().notRequired(),
+  status: yup
+    .mixed<EPurchaseStatus>()
+    .oneOf(Object.values(EPurchaseStatus))
+    .required(),
+  purchaseDate: yup.date().required("Fecha de compra es obligatoria"),
+});

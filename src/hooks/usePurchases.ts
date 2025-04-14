@@ -3,7 +3,11 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { API_URL } from "@/lib/consts";
 import { TPurchase } from "@/lib/types";
 
-const fetchPurchases = () => axios.get<TPurchase[]>(`${API_URL}/purchases`);
+export type TPurchaseResponseItem = TPurchase & {
+  used: boolean;
+};
+const fetchPurchases = () =>
+  axios.get<TPurchaseResponseItem[]>(`${API_URL}/purchases`);
 
 export default function usePurchases() {
   const { isLoading, data, refetch } = useQuery({
