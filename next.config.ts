@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
       transform: "@mui/material/{{member}}",
     },
   },
+  redirects: async () => {
+    return [
+      {
+        source: "/",
+        destination: "/login",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
