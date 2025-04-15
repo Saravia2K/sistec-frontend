@@ -113,9 +113,9 @@ export default function Navbar() {
 
           <Link
             href={`/${
-              user.customer != null
+              user?.customer != null
                 ? "cliente"
-                : user.technician != null
+                : user?.technician != null
                 ? "soporte"
                 : "admin"
             }`}

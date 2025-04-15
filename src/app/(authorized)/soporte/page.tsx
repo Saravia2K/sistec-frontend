@@ -18,37 +18,30 @@ import {
   AccessTime as AccessTimeIcon,
   CheckCircle as CheckCircleIcon,
   ArrowForward as ArrowForwardIcon,
+  Warning as WarningIcon,
 } from "@mui/icons-material";
 import StatCard from "@/components/StatCard";
 import Button from "@/components/Buttton";
 import { COLORS } from "@/lib/consts";
+import useTechnicianDashboard from "@/hooks/useTechnicianDashboard";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 
-// Datos de ejemplo
-const requestsData = [
-  {
-    id: 1,
-    type: "laptop",
-    date: "29 / 03 / 2025",
-    agent: "luis",
-    status: "En progreso",
-  },
-  {
-    id: 2,
-    type: "batería",
-    date: "29 / 03 / 2025",
-    agent: "jaime",
-    status: "En progreso",
-  },
-  {
-    id: 3,
-    type: "procesador",
-    date: "29 / 03 / 2025",
-    agent: "tulio",
-    status: "En progreso",
-  },
-];
+export default function SoportePage() {
+  const { dashboardData, isLoading, isError } = useTechnicianDashboard();
+  const router = useRouter();
 
-export default function ClientePage() {
+  if (isLoading) return <div>Cargando dashboard...</div>;
+  if (isError) return <div>Error al cargar los datos del dashboard</div>;
+
+  // Extraer datos del dashboard
+  const {
+    totalTickets = 0,
+    byStatus = { pending: 0, inProgress: 0, completed: 0 },
+    recentAssignedTickets = [],
+  } = dashboardData || {};
+
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" mb={3}>
@@ -56,6 +49,7 @@ export default function ClientePage() {
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Tarjeta de bienvenida */}
         <Grid
           component={Paper}
           size={{ xs: 12, md: 4 }}
@@ -77,10 +71,10 @@ export default function ClientePage() {
                 fontWeight="bold"
                 mb={1}
               >
-                Hola, Cliente
+                Hola, Técnico
               </Typography>
               <Typography variant="body2">
-                Echa un vistazo a tus solicitudes
+                Tienes {totalTickets} solicitudes asignadas
               </Typography>
             </Box>
             <Button color="green" icon type="outlined">
@@ -108,7 +102,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<ListIcon />}
-                  count={10}
+                  count={totalTickets}
                   label="Total"
                   color="#1a237e"
                 />
@@ -116,7 +110,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<AccessTimeIcon />}
-                  count={5}
+                  count={byStatus.pending}
                   label="Pendientes"
                   color="#1a237e"
                 />
@@ -124,7 +118,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<SettingsIcon />}
-                  count={3}
+                  count={byStatus.inProgress}
                   label="En Proceso"
                   color="#1a237e"
                 />
@@ -132,7 +126,7 @@ export default function ClientePage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<CheckCircleIcon />}
-                  count={2}
+                  count={byStatus.completed}
                   label="Finalizados"
                   color="#1a237e"
                 />
@@ -149,28 +143,67 @@ export default function ClientePage() {
                 <TableHead>
                   <TableRow>
                     <TableCell>ID</TableCell>
-                    <TableCell>Nombre Cliente</TableCell>
-                    <TableCell>Fecha Creación</TableCell>
-                    <TableCell>Estado Actual</TableCell>
+                    <TableCell>Cliente</TableCell>
+                    <TableCell>Fecha</TableCell>
+                    <TableCell>Estado</TableCell>
                     <TableCell>Prioridad</TableCell>
-                    <TableCell></TableCell>
+                    <TableCell>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {requestsData.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell>{request.id}</TableCell>
-                      <TableCell>{request.type}</TableCell>
-                      <TableCell>{request.date}</TableCell>
-                      <TableCell>{request.agent}</TableCell>
-                      <TableCell>{request.status}</TableCell>
-                      <TableCell>
-                        <Button color="blue" icon>
-                          <ArrowForwardIcon fontSize="small" />
-                        </Button>
+                  {recentAssignedTickets.length > 0 ? (
+                    recentAssignedTickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>{ticket.id}</TableCell>
+                        <TableCell>{ticket.customerName}</TableCell>
+                        <TableCell>
+                          {format(new Date(ticket.requestDate), "dd/MM/yyyy", {
+                            locale: es,
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.status === "completed"
+                            ? "Completado"
+                            : ticket.status === "inProgress"
+                            ? "En Proceso"
+                            : "Pendiente"}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.priority === "high" ? (
+                            <Box display="flex" alignItems="center">
+                              <WarningIcon
+                                color="error"
+                                fontSize="small"
+                                sx={{ mr: 1 }}
+                              />
+                              <span>Alta</span>
+                            </Box>
+                          ) : ticket.priority === "medium" ? (
+                            "Media"
+                          ) : (
+                            "Baja"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            color="blue"
+                            icon
+                            onClick={() =>
+                              router.push(`/soporte/tickets/${ticket.id}`)
+                            }
+                          >
+                            <ArrowForwardIcon fontSize="small" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        No hay solicitudes asignadas recientemente
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
