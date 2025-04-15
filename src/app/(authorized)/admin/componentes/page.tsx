@@ -24,8 +24,8 @@ import Input from "@/components/Input";
 import type { TResponseError, TComponent } from "@/lib/types";
 import useComponents from "@/hooks/useComponents";
 import { toast } from "react-toastify";
-import axios, { type AxiosResponse } from "axios";
-import { API_URL } from "@/lib/consts";
+import { type AxiosResponse } from "axios";
+import axios from "@/lib/axios";
 
 // Tipo para el formulario basado en el modelo de Prisma
 type ComponentFormData = {
@@ -70,12 +70,9 @@ export default function ComponentsPage() {
     let response: AxiosResponse;
     const isEditing = editingComponent != null && editingComponent != undefined;
     if (!isEditing) {
-      response = await axios.post(`${API_URL}/components`, data);
+      response = await axios.post(`/components`, data);
     } else {
-      response = await axios.patch(
-        `${API_URL}/components/${editingComponent.id}`,
-        data
-      );
+      response = await axios.patch(`/components/${editingComponent.id}`, data);
     }
 
     if (response.status >= 400) {
@@ -96,7 +93,7 @@ export default function ComponentsPage() {
 
   const handleToggleVisibility = async (component: TComponent) => {
     try {
-      await axios.patch(`${API_URL}/components/${component.id}`, {
+      await axios.patch(`/components/${component.id}`, {
         visible: !component.visible,
       });
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { toast } from "react-toastify";
-import axios from "axios";
+import axios from "@/lib/axios";
 import {
   Box,
   Grid,
@@ -33,7 +33,6 @@ import { formatDate, formatPrice, truncateText } from "@/lib/helpers";
 import Select from "@/components/Select";
 import Input from "@/components/Input";
 import useSuppliers from "@/hooks/useSuppliers";
-import { API_URL } from "@/lib/consts";
 import usePurchases, { TPurchaseResponseItem } from "@/hooks/usePurchases";
 import useComponents from "@/hooks/useComponents";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -107,7 +106,7 @@ export default function InventarioPage() {
         unitPrice: Number(data.unitPrice),
       };
 
-      const response = await axios.post(`${API_URL}/purchases`, payload);
+      const response = await axios.post(`/purchases`, payload);
 
       if (response.status >= 400) {
         const { message } = response.data as TResponseError;
@@ -145,7 +144,7 @@ export default function InventarioPage() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`${API_URL}/purchases/${purchase.id}`);
+          await axios.delete(`/purchases/${purchase.id}`);
 
           Swal.fire({
             title: "Eliminada",
@@ -170,7 +169,7 @@ export default function InventarioPage() {
     const newStatus = event.target.value as EPurchaseStatus;
 
     try {
-      await axios.patch(`${API_URL}/purchases/${purchaseId}/status`, {
+      await axios.patch(`/purchases/${purchaseId}/status`, {
         status: newStatus,
       });
 

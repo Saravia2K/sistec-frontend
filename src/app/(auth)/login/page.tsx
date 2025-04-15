@@ -2,14 +2,14 @@
 
 import { Box, Button, Paper, TextField, Typography } from "@mui/material";
 import Image from "next/image";
-import { API_URL, COLORS } from "@/lib/consts";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/hooks/useLoggedUser";
 
 import logotype from "@/assets/images/logotype_sistec.png";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { TClient, TTechnician } from "@/lib/types";
+import { COLORS } from "@/lib/consts";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -38,7 +38,7 @@ export default function LoginPage() {
           customer: TClient | null;
           technician: TTechnician | null;
         };
-      }>(`${API_URL}/auth/login`, { email, password });
+      }>(`/auth/login`, { email, password });
 
       if (data.status != 201) {
         throw new Error("Credenciales inválidas");

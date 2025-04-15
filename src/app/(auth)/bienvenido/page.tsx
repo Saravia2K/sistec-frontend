@@ -2,13 +2,13 @@
 
 import Image from "next/image";
 import { Box, Button, Paper, TextField, Typography } from "@mui/material";
-import { API_URL, COLORS } from "@/lib/consts";
+import { COLORS } from "@/lib/consts";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import logotype from "@/assets/images/logotype_sistec.png";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 type PasswordFormData = {
   newPassword: string;
@@ -36,7 +36,7 @@ export default function WelcomePage() {
 
   const onSubmit = async (data: PasswordFormData) => {
     try {
-      await axios.patch(`${API_URL}/users/${user?.id}`, {
+      await axios.patch(`/users/${user?.id}`, {
         password: data.newPassword,
       });
 

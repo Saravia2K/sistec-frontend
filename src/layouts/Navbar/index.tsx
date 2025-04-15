@@ -111,7 +111,15 @@ export default function Navbar() {
             </Box>
           </Drawer>
 
-          <Link href="/">
+          <Link
+            href={`/${
+              user.customer != null
+                ? "cliente"
+                : user.technician != null
+                ? "soporte"
+                : "admin"
+            }`}
+          >
             <Image
               src={logotype_sistec}
               alt="Sistec"

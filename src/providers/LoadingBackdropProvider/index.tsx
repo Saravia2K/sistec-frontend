@@ -13,7 +13,7 @@ export default function LoadingBackdropProvider({
   useEffect(() => {
     const isPending = isFetching > 0 || isMutating > 0;
     setOpen(isPending);
-  }, [isFetching, isFetching, isMutating]);
+  }, [isFetching, isMutating]);
 
   return (
     <>
