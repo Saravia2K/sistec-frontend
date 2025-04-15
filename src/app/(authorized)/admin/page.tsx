@@ -21,25 +21,44 @@ import {
   AccessTime as AccessTimeIcon,
   CheckCircle as CheckCircleIcon,
   ArrowForward as ArrowForwardIcon,
+  Warning as WarningIcon,
 } from "@mui/icons-material";
 import StatCard from "@/components/StatCard";
 import Button from "@/components/Buttton";
 import { COLORS } from "@/lib/consts";
-
-// Datos de ejemplo
-const lowStockItems = [
-  { id: 1, name: "Procesador", stock: 2 },
-  { id: 2, name: "Disco Duro", stock: 1 },
-];
-
-const urgentRequests = [
-  { id: 1, date: "29/03/2025", priority: "Urgente" },
-  { id: 2, date: "29/03/2025", priority: "Urgente" },
-];
+import useAdminDashboard from "@/hooks/useAdminDashboard";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function AdminPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { dashboardData, isLoading } = useAdminDashboard();
+
+  if (isLoading) return <div>Cargando dashboard...</div>;
+
+  // Extraer datos del dashboard
+  const {
+    totalTickets = 0,
+    byStatus = { pending: 0, inProgress: 0, completed: 0 },
+    lowStockComponents = [],
+    commonFailures = {},
+    avgRepairTimes = {},
+    highPriorityTickets = [],
+  } = dashboardData || {};
+
+  // Convertir commonFailures a array ordenado
+  const sortedCommonFailures = Object.entries(commonFailures)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5); // Mostrar solo las 5 principales
+
+  // Calcular tiempo promedio de reparación
+  const avgRepairTime =
+    Object.entries(avgRepairTimes).reduce((acc, [days, count]) => {
+      const daysNum = parseInt(days.split(" ")[0]);
+      return acc + daysNum * count;
+    }, 0) /
+    Object.values(avgRepairTimes).reduce((acc, count) => acc + count, 1);
 
   return (
     <Box>
@@ -64,7 +83,7 @@ export default function AdminPage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<ListIcon />}
-                  count={10}
+                  count={totalTickets}
                   label="Total"
                   color="#1a237e"
                 />
@@ -72,7 +91,7 @@ export default function AdminPage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<AccessTimeIcon />}
-                  count={5}
+                  count={byStatus.pending}
                   label="Pendientes"
                   color="#1a237e"
                 />
@@ -80,7 +99,7 @@ export default function AdminPage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<SettingsIcon />}
-                  count={3}
+                  count={byStatus.inProgress}
                   label="En Proceso"
                   color="#1a237e"
                 />
@@ -88,7 +107,7 @@ export default function AdminPage() {
               <Grid size={{ xs: 6 }}>
                 <StatCard
                   icon={<CheckCircleIcon />}
-                  count={2}
+                  count={byStatus.completed}
                   label="Finalizados"
                   color="#1a237e"
                 />
@@ -118,19 +137,29 @@ export default function AdminPage() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Nombre Pieza</TableCell>
-                    <TableCell align="right">Existencias</TableCell>
+                    <TableCell>Nombre</TableCell>
+                    <TableCell>Proveedor</TableCell>
+                    <TableCell align="right">Stock Actual</TableCell>
+                    <TableCell align="right">Mínimo Requerido</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {lowStockItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.id}</TableCell>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell align="right">{item.stock}</TableCell>
+                  {lowStockComponents.length > 0 ? (
+                    lowStockComponents.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.supplier}</TableCell>
+                        <TableCell align="right">{item.currentStock}</TableCell>
+                        <TableCell align="right">{item.minStock}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        No hay componentes con stock bajo
+                      </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -146,8 +175,29 @@ export default function AdminPage() {
               fontWeight="bold"
               mb={3}
             >
-              Fallas mas comunes
+              Fallas más comunes
             </Typography>
+
+            {sortedCommonFailures.length > 0 ? (
+              <Box component="ul" sx={{ pl: 2 }}>
+                {sortedCommonFailures.map(([failure, count]) => (
+                  <Box
+                    component="li"
+                    key={failure}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography>{failure}</Typography>
+                    <Typography fontWeight="bold">{count}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography>No hay datos de fallas registradas</Typography>
+            )}
           </Paper>
         </Grid>
 
@@ -168,7 +218,7 @@ export default function AdminPage() {
             </Typography>
             <Box textAlign="center" py={isMobile ? 2 : 4}>
               <Typography variant="h1" fontWeight="bold">
-                2
+                {Math.round(avgRepairTime * 10) / 10}
               </Typography>
               <Typography variant="h4" fontWeight="bold">
                 Días
@@ -199,18 +249,39 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {urgentRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell>{request.id}</TableCell>
-                      <TableCell>{request.date}</TableCell>
-                      <TableCell>{request.priority}</TableCell>
-                      <TableCell>
-                        <Button color="blue" icon type="outlined">
-                          <ArrowForwardIcon style={{ color: COLORS.BLUE }} />
-                        </Button>
+                  {highPriorityTickets.length > 0 ? (
+                    highPriorityTickets.slice(0, 5).map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>{ticket.id}</TableCell>
+                        <TableCell>
+                          {format(new Date(ticket.requestDate), "dd/MM/yyyy", {
+                            locale: es,
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Box display="flex" alignItems="center">
+                            <WarningIcon
+                              color="error"
+                              fontSize="small"
+                              sx={{ mr: 1 }}
+                            />
+                            <span>Alta</span>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Button color="blue" icon type="outlined">
+                            <ArrowForwardIcon style={{ color: COLORS.BLUE }} />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        No hay solicitudes urgentes
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
