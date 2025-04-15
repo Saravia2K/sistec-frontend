@@ -30,12 +30,12 @@ import axios from "@/lib/axios";
 import Button from "@/components/Buttton";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
-import useTicket from "@/hooks/useTicket";
 import useAvailableComponents from "@/hooks/useAvailableComponents";
 import { toast } from "react-toastify";
 import useAssignedTickets from "@/hooks/useAssignedTickets";
 import updateTicket from "@/services/tickets/update";
 import { ETicketStatus } from "@/lib/enums";
+import { TTicket } from "@/lib/types";
 
 // Esquema Zod para componentes usados
 const UsedComponentSchema = z.object({
@@ -57,12 +57,18 @@ const RepairSchema = z.object({
 
 type RepairFormData = z.infer<typeof RepairSchema>;
 
-export default function TechnicianTicket() {
+interface TechnicianTicketProps {
+  ticket: TTicket;
+  watch?: boolean;
+}
+
+export default function TechnicianTicket({
+  ticket,
+  watch = false,
+}: TechnicianTicketProps) {
   const { id: ticketId } = useParams<{ id: string }>();
   const { components } = useAvailableComponents();
-  const { ticket, refetchTicket } = useTicket(+ticketId);
   const { refetchTickets } = useAssignedTickets();
-  const router = useRouter();
   const [totalCost, setTotalCost] = useState(0);
   const [selectedComponentId, setSelectedComponentId] = useState(1);
   const [selectedComponentQuantity, setSelectedComponentQuantity] = useState(1);
@@ -70,7 +76,7 @@ export default function TechnicianTicket() {
   const {
     control,
     handleSubmit,
-    watch,
+    watch: formWatch,
     formState: { errors },
     reset,
   } = useForm<RepairFormData>({
@@ -87,7 +93,7 @@ export default function TechnicianTicket() {
     control,
     name: "usedComponents",
   });
-  const estimatedCost = watch("estimatedCost");
+  const estimatedCost = formWatch("estimatedCost");
 
   useEffect(() => {
     if (!components) return;
@@ -103,35 +109,35 @@ export default function TechnicianTicket() {
   }, [usedComponents.fields, estimatedCost]);
 
   useEffect(() => {
-    if (!ticket) return;
+    if (!ticket || !components) return;
 
     const { repair } = ticket;
-    console.log(repair);
     reset({
-      appliedSolution: repair.appliedSolution,
-      diagnosis: repair.diagnosis ?? "",
-      estimatedCost: repair.estimatedCost ?? 0,
-      usedComponents: repair.usedComponents.map((uc) => {
-        const componentStock = components.find(
-          (c) => uc.componentStock.component.id == c.component.id
-        );
+      appliedSolution: repair?.appliedSolution || "",
+      diagnosis: repair?.diagnosis || "",
+      estimatedCost: repair?.estimatedCost || 0,
+      usedComponents:
+        repair?.usedComponents?.map((uc) => {
+          const componentStock = components.find(
+            (c) => uc.componentStock.component.id == c.component.id
+          );
 
-        return {
-          componentId: componentStock.component.id,
-          componentStockId: uc.componentStock.id,
-          name: componentStock.component.name,
-          quantity: uc.quantity,
-          supplierName: componentStock.supplier.name,
-          unitPrice: componentStock.unitPrice,
-        };
-      }),
+          return {
+            componentId: componentStock?.component.id || 0,
+            componentStockId: uc.componentStock.id,
+            name: componentStock?.component.name || "",
+            quantity: uc.quantity,
+            supplierName: componentStock?.supplier.name || "",
+            unitPrice: componentStock?.unitPrice || 0,
+          };
+        }) || [],
     });
-  }, [ticket]);
+  }, [ticket, components, reset]);
 
   const onSubmit = async (data: RepairFormData) => {
     try {
-      console.log("Hola");
-      // Preparar los datos para la API
+      if (watch) return; // No hacer nada en modo lectura
+
       const payload = {
         supportTicketId: +ticketId,
         diagnosis: data.diagnosis,
@@ -143,34 +149,28 @@ export default function TechnicianTicket() {
         })),
       };
 
-      // Llamada a la API
       const response = await axios.patch(`/repairs/${ticketId}`, payload);
 
-      // Manejar respuesta exitosa
       if (response.status >= 200 && response.status < 300) {
         toast.success("Reparación guardada exitosamente");
-
         refetchTickets();
-
         return;
       }
 
-      // Manejar errores de la API
       const errorData = response.data;
       toast.error(errorData.message || "Error al guardar la reparación");
     } catch (error) {
-      // Manejar errores de red o del servidor
       let errorMessage = "Error al procesar la solicitud";
-
       toast.error(
         error.response?.data?.message || error.message || errorMessage
       );
-
       console.error("Error detallado:", error);
     }
   };
 
   const handleStartTicket = async (status: ETicketStatus) => {
+    if (watch) return; // No hacer nada en modo lectura
+
     const started = await updateTicket({
       id: +ticketId,
       status,
@@ -178,7 +178,7 @@ export default function TechnicianTicket() {
 
     if (started) {
       toast.success("Ticket actualizado correctamente");
-      refetchTicket();
+      refetchTickets();
     } else {
       toast.error("Error al actualizar el ticket");
     }
@@ -197,30 +197,37 @@ export default function TechnicianTicket() {
         <Typography variant="h4" fontWeight="bold">
           Detalle de Reparación
         </Typography>
-        {ticket.status == ETicketStatus.PENDING ? (
-          <Box>
-            <Button
-              color="green"
-              onClick={() => handleStartTicket(ETicketStatus.IN_PROGRESS)}
-            >
-              Comenzar Ticket
-            </Button>
-            <Button
-              color="blue"
-              onClick={() => handleStartTicket(ETicketStatus.IN_PROGRESS)}
-            >
-              Cancelar Ticket
-            </Button>
-          </Box>
-        ) : (
-          ticket.status == ETicketStatus.IN_PROGRESS && (
-            <Button
-              color="green"
-              onClick={() => handleStartTicket(ETicketStatus.COMPLETED)}
-            >
-              Terminar Ticket
-            </Button>
-          )
+        {!watch && (
+          <>
+            {ticket.status == ETicketStatus.PENDING ? (
+              <Box>
+                <Button
+                  color="green"
+                  onClick={() => handleStartTicket(ETicketStatus.IN_PROGRESS)}
+                  disabled={watch}
+                >
+                  Comenzar Ticket
+                </Button>
+                <Button
+                  color="blue"
+                  onClick={() => handleStartTicket(ETicketStatus.CANCELED)}
+                  disabled={watch}
+                >
+                  Cancelar Ticket
+                </Button>
+              </Box>
+            ) : (
+              ticket.status == ETicketStatus.IN_PROGRESS && (
+                <Button
+                  color="green"
+                  onClick={() => handleStartTicket(ETicketStatus.COMPLETED)}
+                  disabled={watch}
+                >
+                  Terminar Ticket
+                </Button>
+              )
+            )}
+          </>
         )}
       </Box>
 
@@ -303,6 +310,7 @@ export default function TechnicianTicket() {
                         error={!!errors.diagnosis}
                         helperText={errors.diagnosis?.message}
                         placeholder="Ingrese el diagnóstico detallado del problema"
+                        disabled={watch}
                       />
                     )}
                   />
@@ -324,96 +332,104 @@ export default function TechnicianTicket() {
                         error={!!errors.appliedSolution}
                         helperText={errors.appliedSolution?.message}
                         placeholder="Describa la solución aplicada (opcional)"
+                        disabled={watch}
                       />
                     )}
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12 }}>
-                  <Typography variant="subtitle1" fontWeight="medium" mb={1}>
-                    Componentes disponibles
-                  </Typography>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    flexDirection={{ xs: "column", sm: "row" }}
-                    gap={4}
-                  >
-                    <Select
-                      fullWidth
-                      value={selectedComponentId}
-                      onChange={(e) =>
-                        setSelectedComponentId(Number(e.target.value))
-                      }
+                {!watch && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="subtitle1" fontWeight="medium" mb={1}>
+                      Componentes disponibles
+                    </Typography>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      flexDirection={{ xs: "column", sm: "row" }}
+                      gap={4}
                     >
-                      {components.map((c) => (
-                        <MenuItem key={c.id} value={c.id}>
-                          {c.component.name} - {c.supplier.name} - $
-                          {c.unitPrice}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    <Input
-                      label="Cantidad"
-                      value={selectedComponentQuantity}
-                      type="text"
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === "" || /^[0-9]*$/.test(value)) {
-                          setSelectedComponentQuantity(Number(value) || 1);
+                      <Select
+                        fullWidth
+                        value={selectedComponentId}
+                        onChange={(e) =>
+                          setSelectedComponentId(Number(e.target.value))
                         }
-                      }}
-                      slotProps={{
-                        htmlInput: {
-                          min: 1,
-                          max: components.find(
-                            (c) => c.id == selectedComponentId
-                          ).stock,
-                        },
-                      }}
-                      sx={{ width: { xs: "100%", sm: "25%" } }}
-                    />
-                    <Button
-                      color="green"
-                      icon
-                      onClick={() => {
-                        const componentStock = components.find(
-                          (c) => c.id === selectedComponentId
-                        );
-                        if (!componentStock) return;
+                        disabled={watch}
+                      >
+                        {components.map((c) => (
+                          <MenuItem key={c.id} value={c.id}>
+                            {c.component.name} - {c.supplier.name} - $
+                            {c.unitPrice}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <Input
+                        label="Cantidad"
+                        value={selectedComponentQuantity}
+                        type="text"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "" || /^[0-9]*$/.test(value)) {
+                            setSelectedComponentQuantity(Number(value) || 1);
+                          }
+                        }}
+                        slotProps={{
+                          htmlInput: {
+                            min: 1,
+                            max: components.find(
+                              (c) => c.id == selectedComponentId
+                            )?.stock,
+                          },
+                        }}
+                        sx={{ width: { xs: "100%", sm: "25%" } }}
+                        disabled={watch}
+                      />
+                      <Button
+                        color="green"
+                        icon
+                        onClick={() => {
+                          if (watch) return;
+                          const componentStock = components.find(
+                            (c) => c.id === selectedComponentId
+                          );
+                          if (!componentStock) return;
 
-                        const existingIndex = usedComponents.fields.findIndex(
-                          (uc) => uc.componentId === componentStock.component.id
-                        );
+                          const existingIndex = usedComponents.fields.findIndex(
+                            (uc) =>
+                              uc.componentId === componentStock.component.id
+                          );
 
-                        const newComponent = {
-                          componentId: componentStock.component.id,
-                          componentStockId: componentStock.id,
-                          name: componentStock.component.name,
-                          supplierName: componentStock.supplier.name,
-                          unitPrice: componentStock.unitPrice,
-                          quantity: selectedComponentQuantity,
-                        };
+                          const newComponent = {
+                            componentId: componentStock.component.id,
+                            componentStockId: componentStock.id,
+                            name: componentStock.component.name,
+                            supplierName: componentStock.supplier.name,
+                            unitPrice: componentStock.unitPrice,
+                            quantity: selectedComponentQuantity,
+                          };
 
-                        if (existingIndex >= 0) {
-                          usedComponents.update(existingIndex, {
-                            ...usedComponents.fields[existingIndex],
-                            quantity:
-                              usedComponents.fields[existingIndex].quantity +
-                              selectedComponentQuantity,
-                          });
-                        } else {
-                          usedComponents.append(newComponent);
-                        }
+                          if (existingIndex >= 0) {
+                            usedComponents.update(existingIndex, {
+                              ...usedComponents.fields[existingIndex],
+                              quantity:
+                                usedComponents.fields[existingIndex].quantity +
+                                selectedComponentQuantity,
+                            });
+                          } else {
+                            usedComponents.append(newComponent);
+                          }
 
-                        setSelectedComponentId(components[0].id);
-                        setSelectedComponentQuantity(1);
-                      }}
-                    >
-                      <AddIcon />
-                    </Button>
-                  </Box>
-                </Grid>
+                          setSelectedComponentId(components[0].id);
+                          setSelectedComponentQuantity(1);
+                        }}
+                        disabled={watch}
+                      >
+                        <AddIcon />
+                      </Button>
+                    </Box>
+                  </Grid>
+                )}
 
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
@@ -431,7 +447,9 @@ export default function TechnicianTicket() {
                               </TableCell>
                               <TableCell align="right">Cantidad</TableCell>
                               <TableCell align="right">Subtotal</TableCell>
-                              <TableCell align="right">Acciones</TableCell>
+                              {!watch && (
+                                <TableCell align="right">Acciones</TableCell>
+                              )}
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -449,15 +467,18 @@ export default function TechnicianTicket() {
                                 <TableCell align="right">
                                   ${(c.unitPrice * c.quantity).toFixed(2)}
                                 </TableCell>
-                                <TableCell align="right">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => usedComponents.remove(i)}
-                                    sx={{ color: "#f44336" }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </TableCell>
+                                {!watch && (
+                                  <TableCell align="right">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => usedComponents.remove(i)}
+                                      sx={{ color: "#f44336" }}
+                                      disabled={watch}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </TableCell>
+                                )}
                               </TableRow>
                             ))}
                           </TableBody>
@@ -514,22 +535,23 @@ export default function TechnicianTicket() {
                             field.onChange(value === "" ? 0 : Number(value));
                           }
                         }}
+                        disabled={watch}
                       />
                     )}
                   />
                 </Grid>
 
-                <Grid
-                  size={{ xs: 12, md: 4 }}
-                  sx={{ display: "flex", alignItems: "flex-end" }}
-                >
-                  {ticket.status == ETicketStatus.IN_PROGRESS && (
-                    <Button color="green" buttonType="submit">
+                {!watch && ticket.status == ETicketStatus.IN_PROGRESS && (
+                  <Grid
+                    size={{ xs: 12, md: 4 }}
+                    sx={{ display: "flex", alignItems: "flex-end" }}
+                  >
+                    <Button color="green" buttonType="submit" disabled={watch}>
                       <CheckIcon sx={{ mr: 1 }} />
                       Guardar Reparación
                     </Button>
-                  )}
-                </Grid>
+                  </Grid>
+                )}
 
                 <Grid size={{ xs: 12 }}>
                   <Box sx={{ mt: 2, textAlign: "right" }}>

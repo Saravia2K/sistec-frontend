@@ -41,14 +41,6 @@ const statusMap = {
   [ETicketStatus.CANCELED]: "Cancelado",
 };
 
-// Mapeo de prioridades para mostrar en español
-const priorityMap = {
-  low: "Baja",
-  medium: "Media",
-  high: "Alta",
-  critical: "Crítica",
-};
-
 // Colores para las prioridades
 const priorityColors = {
   low: "#8bc34a",
@@ -63,8 +55,13 @@ const priorityOptions = [
   { value: "low", label: "Baja" },
   { value: "medium", label: "Media" },
   { value: "high", label: "Alta" },
-  { value: "critical", label: "Crítica" },
 ];
+
+const priorityLabels = {
+  [ETicketPriority.high]: "Alta",
+  [ETicketPriority.medium]: "Media",
+  [ETicketPriority.low]: "Baja",
+};
 
 // Opciones para el filtro de estado
 const statusOptions = [
@@ -290,7 +287,7 @@ export default function TicketsTable({ data, role }: TicketsTableProps) {
                 },
               }}
             >
-              {Object.entries(priorityMap).map(([value, label]) => (
+              {Object.entries(priorityLabels).map(([value, label]) => (
                 <MenuItem key={value} value={value} sx={{ color: "black" }}>
                   {label}
                 </MenuItem>
@@ -308,7 +305,7 @@ export default function TicketsTable({ data, role }: TicketsTableProps) {
                 fontWeight: "bold",
               }}
             >
-              {priorityMap[ticket.priority]}
+              {priorityLabels[ticket.priority]}
             </Box>
           ),
       },
