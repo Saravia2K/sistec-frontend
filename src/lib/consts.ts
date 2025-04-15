@@ -5,6 +5,6 @@ export const COLORS = {
 
 export const API_URL = {
   development: "http://localhost:8000",
-  production: "http://localhost:8000",
+  production: "https://sistec-backend.onrender.com",
   test: "http://localhost:8000",
 }[process.env.NODE_ENV];
