@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Box,
   Grid,
@@ -17,89 +21,210 @@ import {
   InputAdornment,
   MenuItem,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Add as AddIcon,
   Check as CheckIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
+import axios from "@/lib/axios";
 import Button from "@/components/Buttton";
 import Input from "@/components/Input";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { TRepair } from "@/lib/types";
 import Select from "@/components/Select";
 import useTicket from "@/hooks/useTicket";
-import { useParams } from "next/navigation";
+import useAvailableComponents from "@/hooks/useAvailableComponents";
+import { toast } from "react-toastify";
+import useAssignedTickets from "@/hooks/useAssignedTickets";
+import updateTicket from "@/services/tickets/update";
+import { ETicketStatus } from "@/lib/enums";
 
-// Tipo para el formulario de reparación
-type RepairFormData = Pick<
-  TRepair,
-  "diagnosis" | "appliedSolution" | "startDate" | "endDate" | "estimatedCost"
-> & { usedComponents: { componentStockId: number; quantity: number }[] };
+// Esquema Zod para componentes usados
+const UsedComponentSchema = z.object({
+  componentId: z.number().min(1, "ID de componente inválido"),
+  componentStockId: z.number().min(1, "ID de stock inválido"),
+  quantity: z.number().min(1, "La cantidad debe ser al menos 1"),
+  unitPrice: z.number().min(0.01, "El precio debe ser mayor a 0"),
+  name: z.string().min(1, "Nombre requerido"),
+  supplierName: z.string().min(1, "Proveedor requerido"),
+});
+
+// Esquema Zod principal
+const RepairSchema = z.object({
+  diagnosis: z.string().optional().nullable(),
+  appliedSolution: z.string().optional().nullable(),
+  estimatedCost: z.number().min(0, "El costo no puede ser negativo"),
+  usedComponents: z.array(UsedComponentSchema),
+});
+
+type RepairFormData = z.infer<typeof RepairSchema>;
 
 export default function TechnicianTicket() {
-  const { id } = useParams<{ id: string }>();
-  const { ticket } = useTicket(+id);
+  const { id: ticketId } = useParams<{ id: string }>();
+  const { components } = useAvailableComponents();
+  const { ticket, refetchTicket } = useTicket(+ticketId);
+  const { refetchTickets } = useAssignedTickets();
+  const router = useRouter();
   const [totalCost, setTotalCost] = useState(0);
   const [selectedComponentId, setSelectedComponentId] = useState(1);
   const [selectedComponentQuantity, setSelectedComponentQuantity] = useState(1);
 
-  const { control, handleSubmit, setValue, watch } = useForm<RepairFormData>({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<RepairFormData>({
+    resolver: zodResolver(RepairSchema),
     defaultValues: {
       diagnosis: "",
-      startDate: new Date(),
       appliedSolution: "",
       estimatedCost: 0,
       usedComponents: [],
     },
   });
+
   const usedComponents = useFieldArray({
     control,
     name: "usedComponents",
   });
-
-  // Observando valores del formulario
   const estimatedCost = watch("estimatedCost");
 
-  // useEffect para calcular el total
-  useEffect(() => {}, []);
+  useEffect(() => {
+    if (!components) return;
+    setSelectedComponentId(components[0].id);
+  }, [components]);
 
-  // Actualizar el costo total cuando cambian los componentes o el costo estimado
+  useEffect(() => {
+    const componentsTotal = usedComponents.fields.reduce(
+      (sum, component) => sum + component.quantity * component.unitPrice,
+      0
+    );
+    setTotalCost(componentsTotal + estimatedCost);
+  }, [usedComponents.fields, estimatedCost]);
 
-  // Datos de ejemplo para la búsqueda de componentes
-  const availableComponents = [
-    { id: 1, name: "Procesador Intel i5 10400f", price: 150 },
-    { id: 2, name: "Memoria RAM DDR4 8GB", price: 45 },
-    { id: 3, name: "Disco SSD 500GB", price: 70 },
-    { id: 4, name: "Tarjeta gráfica NVIDIA GTX 1650", price: 200 },
-    { id: 5, name: "Fuente de poder 650W", price: 60 },
-    { id: 6, name: "Placa madre ASUS H510", price: 120 },
-  ];
+  useEffect(() => {
+    if (!ticket) return;
 
-  // Función para enviar el formulario
-  const onSubmit = (data: RepairFormData) => {
-    const repairData = {
-      ...data,
-      usedComponents,
-      totalCost,
-    };
-    console.log("Datos de reparación:", repairData);
-    // Aquí iría la lógica para guardar en la base de datos
+    const { repair } = ticket;
+    console.log(repair);
+    reset({
+      appliedSolution: repair.appliedSolution,
+      diagnosis: repair.diagnosis ?? "",
+      estimatedCost: repair.estimatedCost ?? 0,
+      usedComponents: repair.usedComponents.map((uc) => {
+        const componentStock = components.find(
+          (c) => uc.componentStock.component.id == c.component.id
+        );
+
+        return {
+          componentId: componentStock.component.id,
+          componentStockId: uc.componentStock.id,
+          name: componentStock.component.name,
+          quantity: uc.quantity,
+          supplierName: componentStock.supplier.name,
+          unitPrice: componentStock.unitPrice,
+        };
+      }),
+    });
+  }, [ticket]);
+
+  const onSubmit = async (data: RepairFormData) => {
+    try {
+      console.log("Hola");
+      // Preparar los datos para la API
+      const payload = {
+        supportTicketId: +ticketId,
+        diagnosis: data.diagnosis,
+        appliedSolution: data.appliedSolution,
+        estimatedCost,
+        usedComponents: data.usedComponents.map((component) => ({
+          componentStockId: component.componentStockId,
+          quantity: component.quantity,
+        })),
+      };
+
+      // Llamada a la API
+      const response = await axios.patch(`/repairs/${ticketId}`, payload);
+
+      // Manejar respuesta exitosa
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Reparación guardada exitosamente");
+
+        refetchTickets();
+
+        return;
+      }
+
+      // Manejar errores de la API
+      const errorData = response.data;
+      toast.error(errorData.message || "Error al guardar la reparación");
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      let errorMessage = "Error al procesar la solicitud";
+
+      toast.error(
+        error.response?.data?.message || error.message || errorMessage
+      );
+
+      console.error("Error detallado:", error);
+    }
   };
 
-  if (!ticket) return;
+  const handleStartTicket = async (status: ETicketStatus) => {
+    const started = await updateTicket({
+      id: +ticketId,
+      status,
+    });
+
+    if (started) {
+      toast.success("Ticket actualizado correctamente");
+      refetchTicket();
+    } else {
+      toast.error("Error al actualizar el ticket");
+    }
+  };
+
+  if (!ticket || !components) return null;
+
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" mb={3}>
-        Detalle de Reparación
-      </Typography>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" fontWeight="bold">
+          Detalle de Reparación
+        </Typography>
+        {ticket.status == ETicketStatus.PENDING ? (
+          <Box>
+            <Button
+              color="green"
+              onClick={() => handleStartTicket(ETicketStatus.IN_PROGRESS)}
+            >
+              Comenzar Ticket
+            </Button>
+            <Button
+              color="blue"
+              onClick={() => handleStartTicket(ETicketStatus.IN_PROGRESS)}
+            >
+              Cancelar Ticket
+            </Button>
+          </Box>
+        ) : (
+          ticket.status == ETicketStatus.IN_PROGRESS && (
+            <Button
+              color="green"
+              onClick={() => handleStartTicket(ETicketStatus.COMPLETED)}
+            >
+              Terminar Ticket
+            </Button>
+          )
+        )}
+      </Box>
 
       <Grid container spacing={3}>
-        {/* Sección de información del ticket */}
         <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>
             <Typography variant="h6" fontWeight="bold" mb={2}>
@@ -154,7 +279,6 @@ export default function TechnicianTicket() {
           </Paper>
         </Grid>
 
-        {/* Formulario de reparación */}
         <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 3, borderRadius: 2 }}>
             <Typography variant="h6" fontWeight="bold" mb={3}>
@@ -163,7 +287,6 @@ export default function TechnicianTicket() {
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <Grid container spacing={3}>
-                {/* Diagnóstico */}
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
                     Diagnóstico
@@ -171,22 +294,20 @@ export default function TechnicianTicket() {
                   <Controller
                     name="diagnosis"
                     control={control}
-                    rules={{ required: "Este campo es obligatorio" }}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                       <Input
                         {...field}
                         fullWidth
                         multiline
                         rows={4}
-                        error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
+                        error={!!errors.diagnosis}
+                        helperText={errors.diagnosis?.message}
                         placeholder="Ingrese el diagnóstico detallado del problema"
                       />
                     )}
                   />
                 </Grid>
 
-                {/* Solución aplicada */}
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
                     Solución aplicada
@@ -194,21 +315,20 @@ export default function TechnicianTicket() {
                   <Controller
                     name="appliedSolution"
                     control={control}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                       <Input
                         {...field}
                         fullWidth
                         multiline
                         rows={4}
-                        error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
+                        error={!!errors.appliedSolution}
+                        helperText={errors.appliedSolution?.message}
                         placeholder="Describa la solución aplicada (opcional)"
                       />
                     )}
                   />
                 </Grid>
 
-                {/* Buscar componentes */}
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
                     Componentes disponibles
@@ -223,24 +343,33 @@ export default function TechnicianTicket() {
                       fullWidth
                       value={selectedComponentId}
                       onChange={(e) =>
-                        setSelectedComponentId(e.target.value as any)
+                        setSelectedComponentId(Number(e.target.value))
                       }
                     >
-                      {availableComponents.map((c, i) => (
-                        <MenuItem key={c.id} value={c.id} selected={i == 0}>
-                          {c.name}
+                      {components.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.component.name} - {c.supplier.name} - $
+                          {c.unitPrice}
                         </MenuItem>
                       ))}
                     </Select>
                     <Input
                       label="Cantidad"
                       value={selectedComponentQuantity}
-                      type="number"
-                      onChange={(e) =>
-                        setSelectedComponentQuantity(+e.target.value as any)
-                      }
+                      type="text"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^[0-9]*$/.test(value)) {
+                          setSelectedComponentQuantity(Number(value) || 1);
+                        }
+                      }}
                       slotProps={{
-                        htmlInput: { min: 1, max: 10 },
+                        htmlInput: {
+                          min: 1,
+                          max: components.find(
+                            (c) => c.id == selectedComponentId
+                          ).stock,
+                        },
                       }}
                       sx={{ width: { xs: "100%", sm: "25%" } }}
                     />
@@ -248,26 +377,37 @@ export default function TechnicianTicket() {
                       color="green"
                       icon
                       onClick={() => {
-                        const usedComponentsFields = usedComponents.fields;
-                        const componentInListIndex =
-                          usedComponentsFields.findIndex(
-                            (uc) => uc.componentStockId == selectedComponentId
-                          );
-                        const componentInList =
-                          usedComponentsFields[componentInListIndex];
-                        if (componentInListIndex >= 0) {
-                          usedComponents.update(componentInListIndex, {
-                            componentStockId: selectedComponentId,
+                        const componentStock = components.find(
+                          (c) => c.id === selectedComponentId
+                        );
+                        if (!componentStock) return;
+
+                        const existingIndex = usedComponents.fields.findIndex(
+                          (uc) => uc.componentId === componentStock.component.id
+                        );
+
+                        const newComponent = {
+                          componentId: componentStock.component.id,
+                          componentStockId: componentStock.id,
+                          name: componentStock.component.name,
+                          supplierName: componentStock.supplier.name,
+                          unitPrice: componentStock.unitPrice,
+                          quantity: selectedComponentQuantity,
+                        };
+
+                        if (existingIndex >= 0) {
+                          usedComponents.update(existingIndex, {
+                            ...usedComponents.fields[existingIndex],
                             quantity:
-                              componentInList.quantity +
+                              usedComponents.fields[existingIndex].quantity +
                               selectedComponentQuantity,
                           });
                         } else {
-                          usedComponents.append({
-                            componentStockId: selectedComponentId,
-                            quantity: selectedComponentQuantity,
-                          });
+                          usedComponents.append(newComponent);
                         }
+
+                        setSelectedComponentId(components[0].id);
+                        setSelectedComponentQuantity(1);
                       }}
                     >
                       <AddIcon />
@@ -275,48 +415,60 @@ export default function TechnicianTicket() {
                   </Box>
                 </Grid>
 
-                {/* Piezas utilizadas */}
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
                     Piezas utilizadas
                   </Typography>
                   {usedComponents.fields.length > 0 ? (
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Componente</TableCell>
-                            <TableCell align="right">Precio unitario</TableCell>
-                            <TableCell align="right">Cantidad</TableCell>
-                            <TableCell align="right">Fecha</TableCell>
-                            <TableCell align="right">Acciones</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {usedComponents.fields.map((component, i) => (
-                            <TableRow key={component.id}>
-                              <TableCell>Test</TableCell>
-                              <TableCell align="right">$10</TableCell>
+                    <>
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Componente</TableCell>
                               <TableCell align="right">
-                                {component.quantity}
+                                Precio unitario
                               </TableCell>
-                              <TableCell align="right">
-                                {format(new Date(), "dd/MM/yyyy HH:mm")}
-                              </TableCell>
-                              <TableCell align="right">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => usedComponents.remove(i)}
-                                  sx={{ color: "#f44336" }}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </TableCell>
+                              <TableCell align="right">Cantidad</TableCell>
+                              <TableCell align="right">Subtotal</TableCell>
+                              <TableCell align="right">Acciones</TableCell>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                          </TableHead>
+                          <TableBody>
+                            {usedComponents.fields.map((c, i) => (
+                              <TableRow key={c.id}>
+                                <TableCell>
+                                  {c.name} - {c.supplierName}
+                                </TableCell>
+                                <TableCell align="right">
+                                  ${c.unitPrice}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {c.quantity}
+                                </TableCell>
+                                <TableCell align="right">
+                                  ${(c.unitPrice * c.quantity).toFixed(2)}
+                                </TableCell>
+                                <TableCell align="right">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => usedComponents.remove(i)}
+                                    sx={{ color: "#f44336" }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                      {errors.usedComponents && (
+                        <Typography color="error" variant="body2" mt={1}>
+                          {errors.usedComponents.message}
+                        </Typography>
+                      )}
+                    </>
                   ) : (
                     <Typography
                       variant="body2"
@@ -332,35 +484,6 @@ export default function TechnicianTicket() {
                   <Divider sx={{ my: 2 }} />
                 </Grid>
 
-                {/* Fecha y costo */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Typography variant="subtitle1" fontWeight="medium" mb={1}>
-                    Fecha de inicio
-                  </Typography>
-                  <LocalizationProvider
-                    dateAdapter={AdapterDateFns}
-                    adapterLocale={es}
-                  >
-                    <Controller
-                      name="startDate"
-                      control={control}
-                      rules={{ required: "Este campo es obligatorio" }}
-                      render={({ field }) => (
-                        <DatePicker
-                          value={field.value}
-                          onChange={(date) => field.onChange(date)}
-                          slots={{
-                            textField: Input,
-                          }}
-                          slotProps={{
-                            textField: { fullWidth: true },
-                          }}
-                        />
-                      )}
-                    />
-                  </LocalizationProvider>
-                </Grid>
-
                 <Grid size={{ xs: 12, md: 4 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
                     Costo de la reparación
@@ -368,13 +491,13 @@ export default function TechnicianTicket() {
                   <Controller
                     name="estimatedCost"
                     control={control}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                       <Input
                         {...field}
                         fullWidth
-                        type="number"
-                        error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
+                        type="text"
+                        error={!!errors.estimatedCost}
+                        helperText={errors.estimatedCost?.message}
                         placeholder="0.00"
                         slotProps={{
                           input: {
@@ -386,10 +509,10 @@ export default function TechnicianTicket() {
                           },
                         }}
                         onChange={(e) => {
-                          const value = e.target.value
-                            ? Number.parseFloat(e.target.value)
-                            : null;
-                          field.onChange(value);
+                          const value = e.target.value;
+                          if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                            field.onChange(value === "" ? 0 : Number(value));
+                          }
                         }}
                       />
                     )}
@@ -400,18 +523,14 @@ export default function TechnicianTicket() {
                   size={{ xs: 12, md: 4 }}
                   sx={{ display: "flex", alignItems: "flex-end" }}
                 >
-                  <Button
-                    color="green"
-                    buttonType="submit"
-                    // fullWidth
-                    // sx={{ height: 56, display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <CheckIcon sx={{ mr: 1 }} />
-                    Guardar Reparación
-                  </Button>
+                  {ticket.status == ETicketStatus.IN_PROGRESS && (
+                    <Button color="green" buttonType="submit">
+                      <CheckIcon sx={{ mr: 1 }} />
+                      Guardar Reparación
+                    </Button>
+                  )}
                 </Grid>
 
-                {/* Total */}
                 <Grid size={{ xs: 12 }}>
                   <Box sx={{ mt: 2, textAlign: "right" }}>
                     <Typography variant="subtitle1" fontWeight="bold">

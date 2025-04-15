@@ -9,6 +9,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import LoadingBackdropProvider from "@/providers/LoadingBackdropProvider";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
 import { parseDates } from "@/lib/helpers";
+import { useEffect } from "react";
 
 axios.interceptors.response.use((response: AxiosResponse) => {
   if (response.data) {
@@ -17,7 +18,13 @@ axios.interceptors.response.use((response: AxiosResponse) => {
   return response;
 });
 
+axios.defaults.baseURL = process.env.NEXT_AUTH_API_URL;
+
 export default function Providers({ children }: TProps) {
+  useEffect(() => {
+    console.log(axios.defaults.baseURL);
+  }, []);
+
   return (
     <ReactQueryProvider>
       <LoadingBackdropProvider>
