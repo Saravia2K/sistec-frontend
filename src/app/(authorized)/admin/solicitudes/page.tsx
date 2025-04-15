@@ -5,7 +5,7 @@ import TicketsTable from "@/components/TicketsTable";
 import useTickets from "@/hooks/useTickets";
 
 export default function TicketsPage() {
-  const { tickets } = useTickets();
+  const { tickets, refetchTicket } = useTickets();
 
   if (!tickets) return;
   return (
@@ -21,7 +21,11 @@ export default function TicketsPage() {
         </Typography>
       </Box>
 
-      <TicketsTable data={tickets ?? []} role="admin" />
+      <TicketsTable
+        data={tickets ?? []}
+        role="admin"
+        update={() => refetchTicket()}
+      />
     </Box>
   );
 }

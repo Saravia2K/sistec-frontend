@@ -333,7 +333,9 @@ export default function AdminSoportesPage() {
                     defaultValue={true}
                     render={({ field }) => (
                       <Select {...field} fullWidth size="small">
+                        {/* eslint-disable  @typescript-eslint/no-explicit-any */}
                         <MenuItem value={true as any}>Activo</MenuItem>
+                        {/* eslint-disable  @typescript-eslint/no-explicit-any */}
                         <MenuItem value={false as any}>Inactivo</MenuItem>
                       </Select>
                     )}

@@ -31,6 +31,7 @@ export default function Select({
 }
 
 type TProps = Readonly<
+  // eslint-disable  @typescript-eslint/no-explicit-any
   SelectProps<any> & {
     formControlProps?: Omit<FormControlProps, "fullWidth">;
     inputLabelProps?: InputLabelProps;

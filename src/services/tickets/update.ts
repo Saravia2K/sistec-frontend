@@ -8,6 +8,7 @@ export default async function updateTicket(ticket: Partial<TTicket>) {
     const res = await axios.patch(`/tickets/${id}`, ticketData);
     return res.status == 200;
   } catch (error) {
+    console.log(error);
     return false;
   }
 }

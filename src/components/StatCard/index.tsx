@@ -1,13 +1,8 @@
 import { type ReactElement } from "react";
-import { Box, SvgIconTypeMap, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import Button from "../Buttton";
 
-export default function StatCard({
-  icon,
-  count,
-  label,
-  color = "primary.main",
-}: TProps) {
+export default function StatCard({ icon, count, label }: TProps) {
   return (
     <Box display="flex" alignItems="center" mb={2}>
       <Button color="blue" icon>

@@ -1,4 +1,4 @@
-import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
+import { type PropsWithChildren, useEffect, useState } from "react";
 import { Backdrop } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useIsFetching, useIsMutating } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ export default function LoadingBackdropProvider({
   useEffect(() => {
     const isPending = isFetching > 0 || isMutating > 0;
     setOpen(isPending);
-  }, [isFetching, isFetching]);
+  }, [isFetching, isFetching, isMutating]);
 
   return (
     <>

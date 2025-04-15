@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Box,
   Grid,
@@ -78,16 +78,20 @@ interface TicketsTableProps {
   data: TTicket[];
   role: UserRole;
   technicians?: TUser[]; // Solo necesario para admin
+  update?: () => void;
 }
 
-export default function TicketsTable({ data, role }: TicketsTableProps) {
+export default function TicketsTable({
+  data,
+  role,
+  update,
+}: TicketsTableProps) {
   // Estado para los filtros
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [filteredTickets, setFilteredTickets] = useState<TTicket[]>(data);
-  const router = useRouter();
   const pathname = usePathname();
   const { technicians } = useTechnicians();
 
@@ -140,17 +144,7 @@ export default function TicketsTable({ data, role }: TicketsTableProps) {
         }
       );
 
-      // Actualizar el estado local
-      setFilteredTickets((prevTickets) =>
-        prevTickets.map((ticket) =>
-          ticket.id === ticketId
-            ? {
-                ...ticket,
-                assignedTechnicianId: technicianId,
-              }
-            : ticket
-        )
-      );
+      update();
     } catch (error) {
       console.error("Error al cambiar técnico:", error);
       Swal.fire("Error", "No se pudo cambiar el técnico asignado", "error");
@@ -439,6 +433,7 @@ export default function TicketsTable({ data, role }: TicketsTableProps) {
             <Select
               fullWidth
               value={priorityFilter}
+              // eslint-disable  @typescript-eslint/no-explicit-any
               onChange={(e) => setPriorityFilter(e.target.value as any)}
               label="Filtrar por prioridad"
             >
@@ -453,6 +448,7 @@ export default function TicketsTable({ data, role }: TicketsTableProps) {
             <Select
               fullWidth
               value={statusFilter}
+              // eslint-disable  @typescript-eslint/no-explicit-any
               onChange={(e) => setStatusFilter(e.target.value as any)}
               label="Filtrar por estado"
             >

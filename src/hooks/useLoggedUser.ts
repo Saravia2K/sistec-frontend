@@ -11,6 +11,7 @@ interface AuthState {
 }
 
 interface AuthActions {
+  // eslint-disable  @typescript-eslint/no-explicit-any
   login: (userData: { user: any; token: string }) => void;
   logout: () => void;
 }
@@ -40,6 +41,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         if (typeof window !== "undefined") {
           return localStorage;
         }
+        // eslint-disable  @typescript-eslint/no-explicit-any
         return null as any; // Para Server Components
       }),
     }

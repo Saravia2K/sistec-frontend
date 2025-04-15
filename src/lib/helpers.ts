@@ -1,5 +1,3 @@
-import { AxiosResponse } from "axios";
-
 export const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.toLowerCase().slice(1);
 

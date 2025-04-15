@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import Swal from "sweetalert2";
 import {
   Box,
   Grid,
@@ -95,32 +94,6 @@ export default function ComponentsPage() {
     handleCloseForm();
   };
 
-  const handleConfirmDelete = (component: TComponent) => {
-    console.log(`${API_URL}/components/${component.id}`);
-    Swal.fire({
-      title: "¿Está seguro?",
-      text: `¿Desea eliminar el componente ${component.name}? Esta acción no se puede deshacer.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#1976D2", // Azul
-      cancelButtonColor: "#4CAF50", // Verde
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await axios.delete(`${API_URL}/components/${component.id}`);
-
-        reloadComponents();
-        Swal.fire({
-          title: "Eliminado",
-          text: `El componente ${component.name} ha sido eliminado.`,
-          icon: "success",
-          confirmButtonColor: "#1976D2", // Azul
-        });
-      }
-    });
-  };
-
   const handleToggleVisibility = async (component: TComponent) => {
     try {
       await axios.patch(`${API_URL}/components/${component.id}`, {
@@ -138,6 +111,7 @@ export default function ComponentsPage() {
       toast("Error al cambiar la visibilidad del componente", {
         type: "error",
       });
+      console.log(error);
     }
   };
 

@@ -107,7 +107,7 @@ export default function InventarioPage() {
         unitPrice: Number(data.unitPrice),
       };
 
-      let response = await axios.post(`${API_URL}/purchases`, payload);
+      const response = await axios.post(`${API_URL}/purchases`, payload);
 
       if (response.status >= 400) {
         const { message } = response.data as TResponseError;
@@ -119,7 +119,8 @@ export default function InventarioPage() {
 
       handleCloseForm();
       reloadPurchases();
-    } catch (_) {
+    } catch (error) {
+      console.log(error);
       toast.error("Error al procesar la compra");
     }
   };
@@ -154,8 +155,9 @@ export default function InventarioPage() {
           });
 
           reloadPurchases();
-        } catch (_) {
+        } catch (error) {
           toast.error("Error al eliminar la compra");
+          console.log(error);
         }
       }
     });
@@ -174,8 +176,9 @@ export default function InventarioPage() {
 
       toast.success("Estado actualizado correctamente");
       reloadPurchases();
-    } catch (_) {
+    } catch (error) {
       toast.error("Error al actualizar el estado");
+      console.log(error);
     }
   };
 

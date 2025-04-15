@@ -74,7 +74,7 @@ export type TComponentStock = {
   stock: number;
   minimumStock: number;
   unitPrice: number;
-  inUse: Boolean;
+  inUse: boolean;
   usedIn: TUsedComponents[];
 };
 

@@ -35,7 +35,7 @@ import { es } from "date-fns/locale";
 export default function ClientePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { dashboardData, isLoading, error, refetch } = useClientDashboard();
+  const { dashboardData, isLoading, error } = useClientDashboard();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

@@ -41,7 +41,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
     try {
       const ticketData = {
         ...data,
-        customerId: user?.id,
+        customerId: user?.customer.id,
       };
 
       if (isEditing) {

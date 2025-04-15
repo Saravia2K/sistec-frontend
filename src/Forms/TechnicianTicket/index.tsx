@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -160,7 +160,7 @@ export default function TechnicianTicket({
       const errorData = response.data;
       toast.error(errorData.message || "Error al guardar la reparación");
     } catch (error) {
-      let errorMessage = "Error al procesar la solicitud";
+      const errorMessage = "Error al procesar la solicitud";
       toast.error(
         error.response?.data?.message || error.message || errorMessage
       );
