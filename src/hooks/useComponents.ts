@@ -6,7 +6,7 @@ import { TComponent } from "@/lib/types";
 const fetchComponents = () => axios.get<TComponent[]>(`${API_URL}/components`);
 
 export default function useComponents() {
-  const { isLoading, data, refetch } = useQuery({
+  const { isLoading, data, isError, refetch } = useQuery({
     queryKey: ["components"],
     staleTime: Infinity,
     queryFn: fetchComponents,
@@ -14,8 +14,9 @@ export default function useComponents() {
   });
 
   return {
-    components: data?.data,
+    components: data?.data ?? [],
     componentsLoading: isLoading,
+    errorLoadingComponents: isError,
     reloadComponents: refetch,
   };
 }

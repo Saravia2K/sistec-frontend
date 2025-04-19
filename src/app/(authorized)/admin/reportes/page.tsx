@@ -1,23 +1,16 @@
 "use client";
 
-import type React from "react";
-
 import { useState, useEffect } from "react";
 import {
   Box,
   Grid,
   Paper,
   Typography,
-  CircularProgress,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent,
 } from "@mui/material";
-import { toast } from "react-toastify";
-import axios from "axios";
-import { API_URL } from "@/lib/consts";
 import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -30,7 +23,11 @@ import {
   ArcElement,
   PointElement,
   LineElement,
+  ChartOptions,
 } from "chart.js";
+import useMostUsedComponents from "@/hooks/useMostUsedComponents";
+import useComponents from "@/hooks/useComponents";
+import useComponentStock from "@/hooks/useComponentStocks";
 
 // Registrar los componentes necesarios de Chart.js
 ChartJS.register(
@@ -45,219 +42,46 @@ ChartJS.register(
   LineElement
 );
 
-// Tipos para los datos estadísticos
-type ComponentUsageData = {
-  componentName: string;
-  usageCount: number;
-};
-
-type PartUsageData = {
-  partName: string;
-  usageCount: number;
-};
-
-type ComponentCostData = {
-  componentName: string;
-  suppliers: {
-    supplierName: string;
-    unitPrice: number;
-  }[];
+// Opciones comunes para los gráficos
+const chartOptions: ChartOptions<any> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top" as const,
+    },
+    title: {
+      display: true,
+      font: {
+        size: 16,
+      },
+    },
+  },
 };
 
 export default function StatisticsPage() {
-  const [topComponentsData, setTopComponentsData] = useState<
-    ComponentUsageData[]
-  >([]);
-  const [topPartsData, setTopPartsData] = useState<PartUsageData[]>([]);
-  const [componentCostsData, setComponentCostsData] = useState<
-    ComponentCostData[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedComponent, setSelectedComponent] = useState<string>("");
+  const [selectedComponentId, setSelectedComponentId] = useState(0);
+  const { components: MUC, errorLoadingComponents: errorMUC } =
+    useMostUsedComponents();
+  const { components, errorLoadingComponents } = useComponents();
+  const { component, errorLoadingComponent, reloadComponent } =
+    useComponentStock(selectedComponentId);
 
   useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        setLoading(true);
+    if (!components || components.length == 0) return;
 
-        // Obtener los 5 componentes más utilizados
-        const topComponentsResponse = await axios.get(
-          `${API_URL}/statistics/top-components`
-        );
-        setTopComponentsData(topComponentsResponse.data);
+    setSelectedComponentId(components[0].id);
+  }, [components]);
 
-        // Obtener las piezas más usadas
-        const topPartsResponse = await axios.get(
-          `${API_URL}/statistics/top-parts`
-        );
-        setTopPartsData(topPartsResponse.data);
+  useEffect(() => {
+    if (!selectedComponentId) return;
 
-        // Obtener comparación de costos
-        const componentCostsResponse = await axios.get(
-          `${API_URL}/statistics/component-costs`
-        );
-        setComponentCostsData(componentCostsResponse.data);
+    reloadComponent();
+  }, [selectedComponentId]);
 
-        // Establecer el primer componente como seleccionado por defecto
-        if (componentCostsResponse.data.length > 0) {
-          setSelectedComponent(componentCostsResponse.data[0].componentName);
-        }
-      } catch (error) {
-        console.error("Error fetching statistics:", error);
-        toast("Error al cargar las estadísticas", { type: "error" });
-
-        // Datos de ejemplo en caso de error
-        const mockTopComponents = [
-          { componentName: "Procesador Intel i7", usageCount: 45 },
-          { componentName: "Memoria RAM 16GB", usageCount: 38 },
-          { componentName: "Disco SSD 1TB", usageCount: 32 },
-          { componentName: "Tarjeta Gráfica NVIDIA", usageCount: 28 },
-          { componentName: "Placa Base ASUS", usageCount: 25 },
-        ];
-
-        setTopComponentsData(mockTopComponents);
-
-        setTopPartsData([
-          { partName: "Ventilador CPU", usageCount: 62 },
-          { partName: "Cable SATA", usageCount: 54 },
-          { partName: "Pasta Térmica", usageCount: 47 },
-          { partName: "Tornillos M3", usageCount: 40 },
-          { partName: "Conectores USB", usageCount: 35 },
-        ]);
-
-        const mockComponentCosts = [
-          {
-            componentName: "Procesador Intel i7",
-            suppliers: [
-              { supplierName: "Electrónica Global", unitPrice: 299.99 },
-              { supplierName: "Componentes Rápidos", unitPrice: 315.5 },
-              { supplierName: "Suministros Tech", unitPrice: 289.95 },
-            ],
-          },
-          {
-            componentName: "Memoria RAM 16GB",
-            suppliers: [
-              { supplierName: "Electrónica Global", unitPrice: 89.99 },
-              { supplierName: "Componentes Rápidos", unitPrice: 85.5 },
-              { supplierName: "Suministros Tech", unitPrice: 92.95 },
-            ],
-          },
-        ];
-
-        setComponentCostsData(mockComponentCosts);
-
-        // Establecer el primer componente como seleccionado por defecto
-        if (mockComponentCosts.length > 0) {
-          setSelectedComponent(mockComponentCosts[0].componentName);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStatistics();
-  }, []);
-
-  // Configuración para el gráfico de barras de componentes más utilizados
-  const topComponentsChartData = {
-    labels: topComponentsData.map((item) => item.componentName),
-    datasets: [
-      {
-        label: "Número de usos",
-        data: topComponentsData.map((item) => item.usageCount),
-        backgroundColor: "rgba(54, 162, 235, 0.6)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  // Configuración para el gráfico circular de piezas más usadas
-  const topPartsChartData = {
-    labels: topPartsData.map((item) => item.partName),
-    datasets: [
-      {
-        label: "Número de usos",
-        data: topPartsData.map((item) => item.usageCount),
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-          "rgba(255, 206, 86, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-        ],
-        borderColor: [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 206, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)",
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  // Preparar datos para la comparación de costos
-  const prepareComponentCostData = () => {
-    if (componentCostsData.length === 0) return null;
-
-    // Buscar el componente seleccionado
-    const componentData = componentCostsData.find(
-      (comp) => comp.componentName === selectedComponent
-    );
-
-    if (!componentData) return null;
-
-    return {
-      labels: componentData.suppliers.map((supplier) => supplier.supplierName),
-      datasets: [
-        {
-          label: `Precio de ${componentData.componentName} ($)`,
-          data: componentData.suppliers.map((supplier) => supplier.unitPrice),
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-          borderColor: "rgba(75, 192, 192, 1)",
-          borderWidth: 1,
-        },
-      ],
-    };
-  };
-
-  const componentCostChartData = prepareComponentCostData();
-
-  // Opciones comunes para los gráficos
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: true,
-        font: {
-          size: 16,
-        },
-      },
-    },
-  };
-
-  const handleComponentChange = (event: SelectChangeEvent<string>) => {
-    setSelectedComponent(event.target.value as string);
-  };
-
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="50vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  useEffect(() => {
+    console.log([errorMUC, errorLoadingComponent, errorLoadingComponents]);
+  }, [errorMUC, errorLoadingComponent, errorLoadingComponents]);
 
   return (
     <Box>
@@ -270,11 +94,22 @@ export default function StatisticsPage() {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, borderRadius: 2, height: 400 }}>
             <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
-              Top 5 Componentes Más Utilizados
+              Top {MUC.length} componentes más utilizados
             </Typography>
             <Box height="320px">
               <Bar
-                data={topComponentsChartData}
+                data={{
+                  labels: MUC.map((item) => item.component_name),
+                  datasets: [
+                    {
+                      label: "Número de usos",
+                      data: MUC.map((item) => item.times_used),
+                      backgroundColor: "rgba(54, 162, 235, 0.6)",
+                      borderColor: "rgba(54, 162, 235, 1)",
+                      borderWidth: 1,
+                    },
+                  ],
+                }}
                 options={{
                   ...chartOptions,
                   plugins: {
@@ -298,14 +133,37 @@ export default function StatisticsPage() {
             </Typography>
             <Box height="320px" display="flex" justifyContent="center">
               <Pie
-                data={topPartsChartData}
+                data={{
+                  labels: MUC.map((item) => item.component_name),
+                  datasets: [
+                    {
+                      label: "Número de usos",
+                      data: MUC.map((item) => item.total_units_used),
+                      backgroundColor: [
+                        "rgba(255, 99, 132, 0.6)",
+                        "rgba(54, 162, 235, 0.6)",
+                        "rgba(255, 206, 86, 0.6)",
+                        "rgba(75, 192, 192, 0.6)",
+                        "rgba(153, 102, 255, 0.6)",
+                      ],
+                      borderColor: [
+                        "rgba(255, 99, 132, 1)",
+                        "rgba(54, 162, 235, 1)",
+                        "rgba(255, 206, 86, 1)",
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(153, 102, 255, 1)",
+                      ],
+                      borderWidth: 1,
+                    },
+                  ],
+                }}
                 options={{
                   ...chartOptions,
                   plugins: {
                     ...chartOptions.plugins,
                     title: {
                       ...chartOptions.plugins.title,
-                      text: "Distribución de uso de piezas",
+                      text: "Total de piezas usadas",
                     },
                   },
                 }}
@@ -332,17 +190,14 @@ export default function StatisticsPage() {
                 <Select
                   labelId="component-select-label"
                   id="component-select"
-                  value={selectedComponent}
+                  value={selectedComponentId || ""}
                   label="Componente"
-                  onChange={(e) => handleComponentChange(e)}
+                  onChange={(e) => setSelectedComponentId(+e.target.value)}
                   size="small"
                 >
-                  {componentCostsData.map((component) => (
-                    <MenuItem
-                      key={component.componentName}
-                      value={component.componentName}
-                    >
-                      {component.componentName}
+                  {components.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -350,9 +205,22 @@ export default function StatisticsPage() {
             </Box>
 
             <Box height="350px">
-              {componentCostChartData ? (
+              {component != null && components.length > 0 ? (
                 <Bar
-                  data={componentCostChartData}
+                  data={{
+                    labels: component.stocks.map((s) => s.supplier.name),
+                    datasets: [
+                      {
+                        label: `Precio de ${component.name} ($)`,
+                        data: component.stocks.map(
+                          (supplier) => supplier.unitPrice
+                        ),
+                        backgroundColor: "rgba(75, 192, 192, 0.6)",
+                        borderColor: "rgba(75, 192, 192, 1)",
+                        borderWidth: 1,
+                      },
+                    ],
+                  }}
                   options={{
                     ...chartOptions,
                     plugins: {
@@ -366,7 +234,7 @@ export default function StatisticsPage() {
                       y: {
                         beginAtZero: true,
                         ticks: {
-                          callback: (value) => "$" + value,
+                          callback: (value) => `$${value}`,
                         },
                       },
                     },
