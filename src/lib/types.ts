@@ -63,7 +63,7 @@ export type TComponent = {
   name: string;
   description: string;
   visible: boolean;
-  components?: TComponentStock[];
+  stocks?: TComponentStock[];
   purchases?: TPurchase[];
 };
 
