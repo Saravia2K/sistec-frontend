@@ -41,7 +41,6 @@ export default function WelcomePage() {
       });
 
       if (user?.customer != null) {
-        console.log("Soy un cliente");
         router.push("/cliente");
         return;
       }
@@ -91,8 +90,7 @@ export default function WelcomePage() {
         <Typography textAlign="center" fontSize={13}>
           ¡Bienvenido a SISTEC, {user?.name}!
           <br /> <br />
-          Antes de continuar, por favor cambia tu contraseña para mantener tu
-          cuenta segura
+          Antes de continuar, por favor cambia tu contraseña para mantener tu cuenta segura
         </Typography>
 
         <Controller

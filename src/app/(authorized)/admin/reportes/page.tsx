@@ -61,11 +61,9 @@ const chartOptions: ChartOptions<any> = {
 
 export default function StatisticsPage() {
   const [selectedComponentId, setSelectedComponentId] = useState(0);
-  const { components: MUC, errorLoadingComponents: errorMUC } =
-    useMostUsedComponents();
-  const { components, errorLoadingComponents } = useComponents();
-  const { component, errorLoadingComponent, reloadComponent } =
-    useComponentStock(selectedComponentId);
+  const { components: MUC, errorLoadingComponents: errorMUC } = useMostUsedComponents();
+  const { components } = useComponents();
+  const { component, reloadComponent } = useComponentStock(selectedComponentId);
 
   useEffect(() => {
     if (!components || components.length == 0) return;
@@ -78,10 +76,6 @@ export default function StatisticsPage() {
 
     reloadComponent();
   }, [selectedComponentId]);
-
-  useEffect(() => {
-    console.log([errorMUC, errorLoadingComponent, errorLoadingComponents]);
-  }, [errorMUC, errorLoadingComponent, errorLoadingComponents]);
 
   return (
     <Box>
@@ -175,12 +169,7 @@ export default function StatisticsPage() {
         {/* Comparación de costos */}
         <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 3, borderRadius: 2, height: 450 }}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6" color="primary" fontWeight="bold">
                 Comparación de Costos por Proveedor
               </Typography>
@@ -212,9 +201,7 @@ export default function StatisticsPage() {
                     datasets: [
                       {
                         label: `Precio de ${component.name} ($)`,
-                        data: component.stocks.map(
-                          (supplier) => supplier.unitPrice
-                        ),
+                        data: component.stocks.map((supplier) => supplier.unitPrice),
                         backgroundColor: "rgba(75, 192, 192, 0.6)",
                         borderColor: "rgba(75, 192, 192, 1)",
                         borderWidth: 1,
@@ -241,15 +228,8 @@ export default function StatisticsPage() {
                   }}
                 />
               ) : (
-                <Box
-                  display="flex"
-                  justifyContent="center"
-                  alignItems="center"
-                  height="100%"
-                >
-                  <Typography>
-                    No hay datos disponibles para la comparación de costos
-                  </Typography>
+                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                  <Typography>No hay datos disponibles para la comparación de costos</Typography>
                 </Box>
               )}
             </Box>

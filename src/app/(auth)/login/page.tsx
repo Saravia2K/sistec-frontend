@@ -54,9 +54,7 @@ export default function LoginPage() {
         return;
       }
 
-      console.log(data.data.user);
       if (data.data.user.customer != null) {
-        console.log("Soy un cliente");
         router.push("/cliente");
         return;
       }
