@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import axios from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function ProtectedRoute({
@@ -10,11 +11,15 @@ export default function ProtectedRoute({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isHydrated } = useAuth();
+  const { isAuthenticated, isHydrated, token } = useAuth();
 
   useEffect(() => {
-    if (isHydrated && !isAuthenticated) {
+    if (!isHydrated) return;
+
+    if (!isAuthenticated) {
       router.push("/login");
+    } else {
+      axios.defaults.headers.common = { Authorization: `Bearer ${token}` };
     }
   }, [isAuthenticated, isHydrated, router]);
 
@@ -22,5 +27,6 @@ export default function ProtectedRoute({
     return <div>Loading...</div>;
   }
 
+  if (!isAuthenticated) return <></>;
   return children;
 }

@@ -25,7 +25,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log({ email, password });
       const data = await axios.post<{
         message: string;
         token: string;

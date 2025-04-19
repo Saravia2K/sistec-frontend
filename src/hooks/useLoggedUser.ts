@@ -1,6 +1,7 @@
-import { TClient, TTechnician, TUser } from "@/lib/types";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import axios from "@/lib/axios";
+import { TClient, TTechnician, TUser } from "@/lib/types";
 
 interface AuthState {
   user:
@@ -22,12 +23,16 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      login: (userData) =>
+      login: (userData) => {
+        axios.defaults.headers.common = {
+          Authorization: `Bearer ${userData.token}`,
+        };
         set({
           user: userData.user,
           token: userData.token,
           isAuthenticated: true,
-        }),
+        });
+      },
       logout: () =>
         set({
           user: null,
