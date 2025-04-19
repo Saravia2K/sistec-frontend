@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "react-toastify";
+import type { AxiosResponse } from "axios";
+import axios from "@/lib/axios";
+import Swal from "sweetalert2";
 import {
   Box,
   Grid,
@@ -27,10 +31,6 @@ import Modal from "@/components/Modal";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import useTechnicians from "@/hooks/useTechnicians";
-import { toast } from "react-toastify";
-import axios, { AxiosResponse } from "axios";
-import { API_URL } from "@/lib/consts";
-import Swal from "sweetalert2";
 
 // Tipo para el formulario
 type SupportFormData = {
@@ -92,10 +92,10 @@ export default function AdminSoportesPage() {
     let response: AxiosResponse;
     const isEditing = editingSupport != null && editingSupport != undefined;
     if (!isEditing) {
-      response = await axios.post(`${API_URL}/technicians`, data);
+      response = await axios.post("/technicians", data);
     } else {
       response = await axios.patch(
-        `${API_URL}/technicians/${editingSupport.idUser}`,
+        `/technicians/${editingSupport.idUser}`,
         data
       );
     }
@@ -128,7 +128,7 @@ export default function AdminSoportesPage() {
       cancelButtonText: "Cancelar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await axios.delete(`${API_URL}/technicians/${id}`);
+        await axios.delete(`/technicians/${id}`);
         toast("Técnico eliminado con éxito", {
           type: "success",
         });
@@ -333,9 +333,7 @@ export default function AdminSoportesPage() {
                     defaultValue={true}
                     render={({ field }) => (
                       <Select {...field} fullWidth size="small">
-                        {/* eslint-disable  @typescript-eslint/no-explicit-any */}
                         <MenuItem value={true as any}>Activo</MenuItem>
-                        {/* eslint-disable  @typescript-eslint/no-explicit-any */}
                         <MenuItem value={false as any}>Inactivo</MenuItem>
                       </Select>
                     )}

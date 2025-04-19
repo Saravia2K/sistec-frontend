@@ -24,7 +24,7 @@ import Input from "@/components/Input";
 import type { TResponseError, TComponent } from "@/lib/types";
 import useComponents from "@/hooks/useComponents";
 import { toast } from "react-toastify";
-import { type AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 import axios from "@/lib/axios";
 
 // Tipo para el formulario basado en el modelo de Prisma

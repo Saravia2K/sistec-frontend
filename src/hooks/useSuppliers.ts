@@ -1,10 +1,9 @@
-import axios from "axios";
+import axios from "@/lib/axios";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { API_URL } from "@/lib/consts";
-import { TSupplier } from "@/lib/types";
+import type { TSupplier } from "@/lib/types";
 
 const fetchSuppliers = () =>
-  axios.get<Omit<TSupplier, "purchases" | "stocks">[]>(`${API_URL}/suppliers`);
+  axios.get<Omit<TSupplier, "purchases" | "stocks">[]>("/suppliers");
 
 export default function useSuppliers() {
   const { isLoading, data, refetch } = useQuery({
@@ -12,10 +11,11 @@ export default function useSuppliers() {
     staleTime: Infinity,
     queryFn: fetchSuppliers,
     placeholderData: keepPreviousData,
+    select: (res) => res.data,
   });
 
   return {
-    suppliers: data?.data,
+    suppliers: data,
     suppliersLoading: isLoading,
     reloadSuppliers: refetch,
   };

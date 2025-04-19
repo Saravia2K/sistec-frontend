@@ -1,6 +1,5 @@
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { API_URL } from "@/lib/consts";
 import { toast } from "react-toastify";
 
 export type TSupportedDevice = {
@@ -12,20 +11,11 @@ export type SupportedDeviceFormData = {
   name: string;
 };
 
-const fetchSupportedDevices = async () => {
-  const response = await axios.get<TSupportedDevice[]>(
-    `${API_URL}/supported-devices`
-  );
-  return response.data;
-};
+const fetchSupportedDevices = async () =>
+  axios.get<TSupportedDevice[]>("/supported-devices");
 
-const createDevice = async (data: SupportedDeviceFormData) => {
-  const response = await axios.post<TSupportedDevice>(
-    `${API_URL}/supported-devices`,
-    data
-  );
-  return response.data;
-};
+const createDevice = async (data: SupportedDeviceFormData) =>
+  axios.post<TSupportedDevice>("/supported-devices", data);
 
 const updateDevice = async ({
   id,
@@ -33,13 +23,7 @@ const updateDevice = async ({
 }: {
   id: number;
   data: SupportedDeviceFormData;
-}) => {
-  const response = await axios.patch<TSupportedDevice>(
-    `${API_URL}/supported-devices/${id}`,
-    data
-  );
-  return response.data;
-};
+}) => axios.patch<TSupportedDevice>(`/supported-devices/${id}`, data);
 
 export default function useSupportedDevices() {
   const queryClient = useQueryClient();
@@ -52,6 +36,7 @@ export default function useSupportedDevices() {
   } = useQuery({
     queryKey: ["supportedDevices"],
     queryFn: fetchSupportedDevices,
+    select: (res) => res.data,
   });
 
   const createMutation = useMutation({

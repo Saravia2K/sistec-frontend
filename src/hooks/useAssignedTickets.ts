@@ -1,21 +1,10 @@
-// hooks/useClientTicket.ts
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
-import { API_URL } from "@/lib/consts";
-import { useAuth } from "./useAuth";
 import { TTicket } from "@/lib/types";
+import { useAuth } from "./useAuth";
 
-const fetchClientTickets = async (technicianId: number, token: string) => {
-  const response = await axios.get<TTicket[]>(
-    `${API_URL}/tickets/technician/${technicianId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  return response.data;
-};
+const fetchClientTickets = async (technicianId: number) =>
+  axios.get<TTicket[]>(`/tickets/technician/${technicianId}`);
 
 export default function useAssignedTickets() {
   const { user, token } = useAuth();
@@ -28,8 +17,9 @@ export default function useAssignedTickets() {
     refetch,
   } = useQuery({
     queryKey: ["tickets", "assigned", technicianId],
-    queryFn: () => fetchClientTickets(technicianId!, token!),
-    enabled: !!technicianId && !!token, // Solo se ejecuta si hay customerId y token
+    queryFn: () => fetchClientTickets(technicianId!),
+    enabled: !!technicianId && !!token,
+    select: (res) => res.data,
   });
 
   return {

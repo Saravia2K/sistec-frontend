@@ -1,13 +1,9 @@
-// hooks/useClientTicket.ts
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
-import { API_URL } from "@/lib/consts";
 import { TTicket } from "@/lib/types";
 
-const fetchClientTickets = async (id: number) => {
-  const response = await axios.get<TTicket>(`${API_URL}/tickets/${id}`);
-  return response.data;
-};
+const fetchClientTickets = async (id: number) =>
+  axios.get<TTicket>(`/tickets/${id}`);
 
 export default function useTicket(id: number) {
   const {
@@ -18,8 +14,9 @@ export default function useTicket(id: number) {
   } = useQuery({
     queryKey: ["tickets", id],
     queryFn: () => fetchClientTickets(id!),
-    enabled: !!id, // Solo se ejecuta si hay customerId y token,
+    enabled: !!id,
     staleTime: 0,
+    select: (res) => res.data,
   });
 
   return {

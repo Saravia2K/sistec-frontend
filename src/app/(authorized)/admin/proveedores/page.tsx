@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { AxiosResponse } from "axios";
+import axios from "@/lib/axios";
 import { useForm, Controller } from "react-hook-form";
+import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import {
   Box,
@@ -18,14 +21,13 @@ import {
   TableContainer,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
+
 import Button from "@/components/Buttton";
 import Modal from "@/components/Modal";
 import Input from "@/components/Input";
-import type { TResponseError, TSupplier } from "@/lib/types";
 import useSuppliers from "@/hooks/useSuppliers";
-import { toast } from "react-toastify";
-import axios, { AxiosResponse } from "axios";
-import { API_URL } from "@/lib/consts";
+
+import type { TResponseError, TSupplier } from "@/lib/types";
 
 // Tipo para el formulario basado en el modelo de Prisma
 type SupplierFormData = {
@@ -73,12 +75,9 @@ export default function PrveedoresPage() {
     let response: AxiosResponse;
     const isEditing = editingSupplier != null && editingSupplier != undefined;
     if (!isEditing) {
-      response = await axios.post(`${API_URL}/suppliers`, data);
+      response = await axios.post("/suppliers", data);
     } else {
-      response = await axios.patch(
-        `${API_URL}/suppliers/${editingSupplier.id}`,
-        data
-      );
+      response = await axios.patch(`/suppliers/${editingSupplier.id}`, data);
     }
 
     if (response.status >= 400) {
@@ -109,7 +108,7 @@ export default function PrveedoresPage() {
       cancelButtonText: "Cancelar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await axios.delete(`${API_URL}/suppliers/${supplier.id}`);
+        await axios.delete(`/suppliers/${supplier.id}`);
 
         reloadSuppliers();
         Swal.fire({

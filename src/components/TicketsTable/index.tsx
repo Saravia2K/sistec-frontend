@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import axios from "@/lib/axios";
+import Swal from "sweetalert2";
+import { format } from "date-fns";
 import {
   Box,
   Grid,
@@ -22,16 +26,13 @@ import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { format } from "date-fns";
-import Swal from "sweetalert2";
+
 import Select from "@/components/Select";
+
+import useTechnicians from "@/hooks/useTechnicians";
 import { truncateText } from "@/lib/helpers";
 import { ETicketPriority, ETicketStatus } from "@/lib/enums";
-import Link from "next/link";
 import { TTicket, TUser } from "@/lib/types";
-import axios from "axios";
-import { API_URL } from "@/lib/consts";
-import useTechnicians from "@/hooks/useTechnicians";
 
 // Mapeo de estados para mostrar en español
 const statusMap = {
@@ -132,17 +133,9 @@ export default function TicketsTable({
     technicianId: number
   ) => {
     try {
-      await axios.patch(
-        `${API_URL}/tickets/${ticketId}`,
-        {
-          assignedTechnicianId: technicianId,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await axios.patch(`/tickets/${ticketId}`, {
+        assignedTechnicianId: technicianId,
+      });
 
       update();
     } catch (error) {
@@ -157,17 +150,9 @@ export default function TicketsTable({
     priority: ETicketPriority
   ) => {
     try {
-      await axios.patch(
-        `${API_URL}/tickets/${ticketId}`,
-        {
-          priority,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await axios.patch(`/tickets/${ticketId}`, {
+        priority,
+      });
 
       // Actualizar el estado local
       setFilteredTickets((prevTickets) =>
@@ -193,7 +178,7 @@ export default function TicketsTable({
       cancelButtonText: "Cancelar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await axios.delete(`${API_URL}/tickets/${id}`);
+        await axios.delete(`/tickets/${id}`);
         // Aquí iría la lógica para eliminar el ticket
         setFilteredTickets(
           filteredTickets.filter((ticket) => ticket.id !== id)

@@ -1,8 +1,6 @@
 // hooks/useTechnicianDashboard.ts
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
-import { API_URL } from "@/lib/consts";
-import { useAuth } from "./useAuth";
 
 interface RecentAssignedTicket {
   id: number;
@@ -22,20 +20,13 @@ interface TechnicianDashboardData {
   recentAssignedTickets: RecentAssignedTicket[];
 }
 
-const fetchTechnicianDashboard = (token: string) =>
-  axios.get<TechnicianDashboardData>(`${API_URL}/dashboard/technician`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+const fetchTechnicianDashboard = () =>
+  axios.get<TechnicianDashboardData>("/dashboard/technician");
 
 export default function useTechnicianDashboard() {
-  const { token } = useAuth();
-
   const { isLoading, isError, data, error, refetch } = useQuery({
-    queryKey: ["technicianDashboard"],
-    queryFn: () => fetchTechnicianDashboard(token || ""),
-    enabled: !!token,
+    queryKey: ["dashboard", "support"],
+    queryFn: fetchTechnicianDashboard,
     select: (response) => response.data,
   });
 

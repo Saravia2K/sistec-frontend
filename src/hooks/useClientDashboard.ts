@@ -1,8 +1,5 @@
-// hooks/useClientDashboard.ts
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
-import { API_URL } from "@/lib/consts";
-import { useAuth } from "./useAuth";
 
 interface Ticket {
   id: number;
@@ -28,20 +25,13 @@ interface DashboardData {
   recentRequests: Ticket[];
 }
 
-const fetchClientDashboard = (token: string) =>
-  axios.get<DashboardData>(`${API_URL}/dashboard/client`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const fetchClientDashboard = () =>
+  axios.get<DashboardData>("/dashboard/client");
 
 export default function useClientDashboard() {
-  const { token } = useAuth();
-
   const { isLoading, data, error, refetch } = useQuery({
-    queryKey: ["clientDashboard"],
-    queryFn: () => fetchClientDashboard(token || ""),
-    enabled: !!token, // Solo ejecuta si hay token
+    queryKey: ["dashboard", "client"],
+    queryFn: fetchClientDashboard,
     select: (response) => response.data,
   });
 

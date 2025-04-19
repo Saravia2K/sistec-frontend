@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import type { AxiosResponse } from "axios";
+import axios from "@/lib/axios";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import {
   Box,
   Grid,
@@ -17,16 +21,14 @@ import {
   TableContainer,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
+
 import Button from "@/components/Buttton";
 import Modal from "@/components/Modal";
-import { TClient, TResponseError } from "@/lib/types";
-import useUsers from "@/hooks/useUsers";
-import { formatDate } from "@/lib/helpers";
 import Input from "@/components/Input";
-import axios, { AxiosResponse } from "axios";
-import { API_URL } from "@/lib/consts";
-import { toast } from "react-toastify";
-import Swal from "sweetalert2";
+
+import useUsers from "@/hooks/useUsers";
+import { TClient, TResponseError } from "@/lib/types";
+import { formatDate } from "@/lib/helpers";
 
 // Tipo para el formulario
 type ClientFormData = {
@@ -83,12 +85,9 @@ export default function AdminUsuariosPage() {
     let response: AxiosResponse;
     const isEditing = editingClient != null && editingClient != undefined;
     if (!isEditing) {
-      response = await axios.post(`${API_URL}/clients`, data);
+      response = await axios.post("/clients", data);
     } else {
-      response = await axios.patch(
-        `${API_URL}/clients/${editingClient.idUser}`,
-        data
-      );
+      response = await axios.patch(`/clients/${editingClient.idUser}`, data);
     }
 
     if (response.status >= 400) {
@@ -120,7 +119,7 @@ export default function AdminUsuariosPage() {
       cancelButtonText: "Cancelar",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await axios.delete(`${API_URL}/clients/${id}`);
+        await axios.delete(`/clients/${id}`);
         toast("Usuario eliminado con éxito", {
           type: "success",
         });

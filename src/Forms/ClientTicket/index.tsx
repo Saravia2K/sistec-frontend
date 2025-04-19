@@ -3,15 +3,16 @@
 import { usePathname, useRouter } from "next/navigation";
 import { Grid, Paper, FormControl, FormLabel, MenuItem } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
+import Swal from "sweetalert2";
+
 import Button from "@/components/Buttton";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
-import { TTicket } from "@/lib/types";
-import Swal from "sweetalert2";
-import axios from "axios";
+
 import { useAuth } from "@/hooks/useAuth";
 import useSupportedDevices from "@/hooks/useSupportedDevices";
-import { API_URL } from "@/lib/consts";
+import { TTicket } from "@/lib/types";
+import axios from "@/lib/axios";
 
 type SupportTicketFormData = Pick<
   TTicket,
@@ -45,7 +46,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
       };
 
       if (isEditing) {
-        await axios.patch(`${API_URL}/tickets/${ticket.id}`, ticketData, {
+        await axios.patch(`/tickets/${ticket.id}`, ticketData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -56,7 +57,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
           "success"
         );
       } else {
-        await axios.post(`${API_URL}/tickets`, ticketData, {
+        await axios.post("/tickets", ticketData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
