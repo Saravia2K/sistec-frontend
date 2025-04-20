@@ -12,10 +12,11 @@ interface IObjectNumberProp {
 
 interface LowStockComponent {
   id: number;
-  name: string;
-  currentStock: number;
-  minStock: number;
+  component: string;
   supplier: string;
+  stock: number;
+  minimumStock: number;
+  unitPrice: number;
 }
 
 interface DashboardData {
