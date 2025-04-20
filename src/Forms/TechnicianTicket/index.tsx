@@ -183,7 +183,7 @@ export default function TechnicianTicket({
     }
   };
 
-  const handleStartTicket = async (status: ETicketStatus) => {
+  const handleChangeTicketState = async (status: ETicketStatus) => {
     if (watch) return; // No hacer nada en modo lectura
 
     const started = await updateTicket({
@@ -194,6 +194,7 @@ export default function TechnicianTicket({
     if (started) {
       toast.success("Ticket actualizado correctamente");
       refetchTickets();
+      if (onStateUpdate) onStateUpdate();
     } else {
       toast.error("Error al actualizar el ticket");
     }
@@ -227,14 +228,14 @@ export default function TechnicianTicket({
               <Box>
                 <Button
                   color="green"
-                  onClick={() => handleStartTicket(ETicketStatus.IN_PROGRESS)}
+                  onClick={() => handleChangeTicketState(ETicketStatus.IN_PROGRESS)}
                   disabled={watch}
                 >
                   Comenzar Ticket
                 </Button>
                 <Button
                   color="blue"
-                  onClick={() => handleStartTicket(ETicketStatus.CANCELED)}
+                  onClick={() => handleChangeTicketState(ETicketStatus.CANCELED)}
                   disabled={watch}
                 >
                   Cancelar Ticket
@@ -244,7 +245,7 @@ export default function TechnicianTicket({
               ticket.status == ETicketStatus.IN_PROGRESS && (
                 <Button
                   color="green"
-                  onClick={() => handleStartTicket(ETicketStatus.COMPLETED)}
+                  onClick={() => handleChangeTicketState(ETicketStatus.COMPLETED)}
                   disabled={watch}
                 >
                   Terminar Ticket
@@ -358,119 +359,123 @@ export default function TechnicianTicket({
                   />
                 </Grid>
 
-                {!watch && (
-                  <Grid size={{ xs: 12 }}>
-                    <Typography variant="subtitle1" fontWeight="medium" mb={1}>
-                      Componentes disponibles
-                    </Typography>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      flexDirection={{ xs: "column", sm: "row" }}
-                      gap={4}
-                    >
-                      <Select
-                        fullWidth
-                        value={selectedComponent?.id ?? ""}
-                        onChange={(e) =>
-                          setSelectedComponent(
-                            components.find((c) => c.id == +e.target.value) || components[0]
-                          )
-                        }
-                        disabled={watch}
+                {!watch ||
+                  ((ticket.status == ETicketStatus.IN_PROGRESS ||
+                    ticket.status == ETicketStatus.PENDING) && (
+                    <Grid size={{ xs: 12 }}>
+                      <Typography variant="subtitle1" fontWeight="medium" mb={1}>
+                        Componentes disponibles
+                      </Typography>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        flexDirection={{ xs: "column", sm: "row" }}
+                        gap={4}
                       >
-                        {inUseComponents.map((c) => (
-                          <MenuItem key={c.id} value={c.id}>
-                            {c.component.name} - {c.supplier.name} - ${c.unitPrice}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      <Input
-                        label="Cantidad"
-                        value={selectedComponentQuantity}
-                        type="text"
-                        placeholder="75"
-                        error={!!selectedComponentQuantityError}
-                        helperText={selectedComponentQuantityError || `Stock actual: ${getStock()}`}
-                        onKeyDown={(e) => {
-                          if (e.key == "Enter") {
-                            addComponentBtnRef.current?.click();
-                            e.stopPropagation();
-                            e.preventDefault();
+                        <Select
+                          fullWidth
+                          value={selectedComponent?.id ?? ""}
+                          onChange={(e) =>
+                            setSelectedComponent(
+                              components.find((c) => c.id == +e.target.value) || components[0]
+                            )
                           }
-                        }}
-                        onChange={(e) => {
-                          setSelectedComponentQuantityError("");
-                          const value = e.target.value;
-                          const isNumeric = /^[0-9]*$/.test(value);
-                          if (!isNumeric && value != "") return;
+                          disabled={watch}
+                        >
+                          {inUseComponents.map((c) => (
+                            <MenuItem key={c.id} value={c.id}>
+                              {c.component.name} - {c.supplier.name} - ${c.unitPrice}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        <Input
+                          label="Cantidad"
+                          value={selectedComponentQuantity}
+                          type="text"
+                          placeholder="75"
+                          error={!!selectedComponentQuantityError}
+                          helperText={
+                            selectedComponentQuantityError || `Stock actual: ${getStock()}`
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key == "Enter") {
+                              addComponentBtnRef.current?.click();
+                              e.stopPropagation();
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => {
+                            setSelectedComponentQuantityError("");
+                            const value = e.target.value;
+                            const isNumeric = /^[0-9]*$/.test(value);
+                            if (!isNumeric && value != "") return;
 
-                          const numericValue = Number(value);
-                          setSelectedComponentQuantity(numericValue || "");
-                          const stock = getStock();
-                          if (numericValue > stock)
-                            setSelectedComponentQuantityError(
-                              `No hay stock suficiente para ese valor. Stock actual: ${stock}`
+                            const numericValue = Number(value);
+                            setSelectedComponentQuantity(numericValue || "");
+                            const stock = getStock();
+                            if (numericValue > stock)
+                              setSelectedComponentQuantityError(
+                                `No hay stock suficiente para ese valor. Stock actual: ${stock}`
+                              );
+                          }}
+                          sx={{ width: { xs: "100%", sm: "25%" } }}
+                          disabled={watch}
+                        />
+                        <Button
+                          color="green"
+                          icon
+                          ref={addComponentBtnRef}
+                          onClick={() => {
+                            if (
+                              watch || // Si está en modo lectura
+                              !selectedComponent || // Si no hay componente seleccionado
+                              !!selectedComponentQuantityError // Si hay error en la cantidad seleccionada
+                            )
+                              return;
+
+                            if (selectedComponentQuantity == "") {
+                              setSelectedComponentQuantityError("Ingrese una cantidad correcta");
+                              return;
+                            }
+
+                            const existingIndex = usedComponents.fields.findIndex(
+                              (uc) => uc.componentId === selectedComponent.component.id && uc.local
                             );
-                        }}
-                        sx={{ width: { xs: "100%", sm: "25%" } }}
-                        disabled={watch}
-                      />
-                      <Button
-                        color="green"
-                        icon
-                        ref={addComponentBtnRef}
-                        onClick={() => {
-                          if (
-                            watch || // Si está en modo lectura
-                            !selectedComponent || // Si no hay componente seleccionado
-                            !!selectedComponentQuantityError // Si hay error en la cantidad seleccionada
-                          )
-                            return;
 
-                          if (selectedComponentQuantity == "") {
-                            setSelectedComponentQuantityError("Ingrese una cantidad correcta");
-                            return;
-                          }
+                            let quantity = 0;
+                            if (existingIndex >= 0) {
+                              quantity =
+                                usedComponents.fields[existingIndex].quantity +
+                                +selectedComponentQuantity;
+                              usedComponents.update(existingIndex, {
+                                ...usedComponents.fields[existingIndex],
+                                quantity,
+                              });
+                            } else {
+                              quantity = +selectedComponentQuantity;
+                              usedComponents.append({
+                                componentId: selectedComponent.component.id,
+                                componentStockId: selectedComponent.id,
+                                name: selectedComponent.component.name,
+                                supplierName: selectedComponent.supplier.name,
+                                unitPrice: selectedComponent.unitPrice,
+                                quantity,
+                                local: true,
+                              });
+                            }
 
-                          const existingIndex = usedComponents.fields.findIndex(
-                            (uc) => uc.componentId === selectedComponent.component.id && uc.local
-                          );
+                            const currentStock = getStock() - quantity;
 
-                          let quantity = 0;
-                          if (existingIndex >= 0) {
-                            quantity =
-                              usedComponents.fields[existingIndex].quantity +
-                              +selectedComponentQuantity;
-                            usedComponents.update(existingIndex, {
-                              ...usedComponents.fields[existingIndex],
-                              quantity,
-                            });
-                          } else {
-                            quantity = +selectedComponentQuantity;
-                            usedComponents.append({
-                              componentId: selectedComponent.component.id,
-                              componentStockId: selectedComponent.id,
-                              name: selectedComponent.component.name,
-                              supplierName: selectedComponent.supplier.name,
-                              unitPrice: selectedComponent.unitPrice,
-                              quantity,
-                              local: true,
-                            });
-                          }
-
-                          const currentStock = getStock() - quantity;
-
-                          setSelectedComponent(components[0]);
-                          setSelectedComponentQuantity(currentStock >= 1 ? 1 : 0);
-                        }}
-                        disabled={watch || !selectedComponent}
-                      >
-                        <AddIcon />
-                      </Button>
-                    </Box>
-                  </Grid>
-                )}
+                            setSelectedComponent(components[0]);
+                            setSelectedComponentQuantity(currentStock >= 1 ? 1 : 0);
+                          }}
+                          disabled={watch || !selectedComponent}
+                        >
+                          <AddIcon />
+                        </Button>
+                      </Box>
+                    </Grid>
+                  ))}
 
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" fontWeight="medium" mb={1}>
