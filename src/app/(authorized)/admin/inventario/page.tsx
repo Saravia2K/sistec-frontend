@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import * as yup from "yup";
-import { yupResolver } from "@hookform/resolvers/yup";
+import { z } from "zod";
 import { toast } from "react-toastify";
 import axios from "@/lib/axios";
 import {
@@ -36,6 +35,7 @@ import useSuppliers from "@/hooks/useSuppliers";
 import usePurchases, { TPurchaseResponseItem } from "@/hooks/usePurchases";
 import useComponents from "@/hooks/useComponents";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 // Mapeo de estados a texto en español
 const statusLabels = {
@@ -43,17 +43,6 @@ const statusLabels = {
   [EPurchaseStatus.COMPLETED]: "Completado",
   [EPurchaseStatus.CANCELED]: "Cancelado",
   [EPurchaseStatus.RETURNED]: "Devuelto",
-};
-
-// Tipo para el formulario basado en el modelo de Prisma
-type PurchaseFormData = {
-  supplierId: number;
-  componentId: number;
-  quantity: number;
-  unitPrice: number;
-  details: string;
-  status: EPurchaseStatus;
-  purchaseDate: Date;
 };
 
 export default function InventarioPage() {
@@ -68,7 +57,7 @@ export default function InventarioPage() {
     reset,
     formState: { errors },
   } = useForm<PurchaseFormData>({
-    resolver: yupResolver(purchaseSchema),
+    resolver: zodResolver(purchaseSchema),
     defaultValues: {
       supplierId: 0,
       componentId: 0,
@@ -125,12 +114,8 @@ export default function InventarioPage() {
   };
 
   const handleConfirmDelete = (purchase: TPurchase) => {
-    const supplierName = suppliers?.find(
-      (s) => s.id === purchase.supplier.id
-    )?.name;
-    const componentName = components?.find(
-      (c) => c.id === purchase.component.id
-    )?.name;
+    const supplierName = suppliers?.find((s) => s.id === purchase.supplier.id)?.name;
+    const componentName = components?.find((c) => c.id === purchase.component.id)?.name;
 
     Swal.fire({
       title: "¿Está seguro?",
@@ -162,10 +147,7 @@ export default function InventarioPage() {
     });
   };
 
-  const handleStatusChange = async (
-    event: SelectChangeEvent<string>,
-    purchaseId: number
-  ) => {
+  const handleStatusChange = async (event: SelectChangeEvent<string>, purchaseId: number) => {
     const newStatus = event.target.value as EPurchaseStatus;
 
     try {
@@ -181,25 +163,18 @@ export default function InventarioPage() {
     }
   };
 
-  const showStateOption = (
-    status: EPurchaseStatus,
-    purchase: TPurchaseResponseItem
-  ) => {
+  const showStateOption = (status: EPurchaseStatus, purchase: TPurchaseResponseItem) => {
     const isPending = status == EPurchaseStatus.PENDING;
     const isCancelAndNotCompletedEitherReturned =
       status == EPurchaseStatus.CANCELED &&
-      ![EPurchaseStatus.COMPLETED, EPurchaseStatus.RETURNED].includes(
-        purchase.status
-      );
+      ![EPurchaseStatus.COMPLETED, EPurchaseStatus.RETURNED].includes(purchase.status);
     const isReturnedAndPurchaseCompletedAndNotUsed =
       status == EPurchaseStatus.RETURNED &&
       purchase.status == EPurchaseStatus.COMPLETED &&
       !purchase.used;
     const isCompletedAndPurchaseIsPendingOrCompleted =
       status == EPurchaseStatus.COMPLETED &&
-      [EPurchaseStatus.PENDING, EPurchaseStatus.COMPLETED].includes(
-        purchase.status
-      );
+      [EPurchaseStatus.PENDING, EPurchaseStatus.COMPLETED].includes(purchase.status);
 
     return (
       isPending ||
@@ -215,12 +190,7 @@ export default function InventarioPage() {
 
   return (
     <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight="bold">
           Gestión de Compras
         </Typography>
@@ -255,33 +225,20 @@ export default function InventarioPage() {
                     purchases.map((purchase) => (
                       <TableRow key={purchase.id}>
                         <TableCell>
-                          {
-                            suppliers.find((s) => s.id === purchase.supplier.id)
-                              ?.name
-                          }
+                          {suppliers.find((s) => s.id === purchase.supplier.id)?.name}
                         </TableCell>
                         <TableCell>
-                          {
-                            components?.find(
-                              (c) => c.id === purchase.component.id
-                            )?.name
-                          }
+                          {components?.find((c) => c.id === purchase.component.id)?.name}
                         </TableCell>
                         <TableCell>{purchase.quantity}</TableCell>
                         <TableCell>{formatPrice(purchase.unitPrice)}</TableCell>
+                        <TableCell>{formatDate(purchase.purchaseDate)}</TableCell>
                         <TableCell>
-                          {formatDate(purchase.purchaseDate)}
-                        </TableCell>
-                        <TableCell>
-                          {purchase.deliveryDate
-                            ? formatDate(purchase.deliveryDate)
-                            : "-"}
+                          {purchase.deliveryDate ? formatDate(purchase.deliveryDate) : "-"}
                         </TableCell>
                         <TableCell>
                           <Tooltip title={purchase.details || ""}>
-                            <span>
-                              {truncateText(purchase.details || "", 100)}
-                            </span>
+                            <span>{truncateText(purchase.details || "", 100)}</span>
                           </Tooltip>
                         </TableCell>
                         <TableCell>
@@ -291,9 +248,7 @@ export default function InventarioPage() {
                           ) : (
                             <Select
                               value={purchase.status}
-                              onChange={(e) =>
-                                handleStatusChange(e, purchase.id)
-                              }
+                              onChange={(e) => handleStatusChange(e, purchase.id)}
                               size="small"
                               sx={{ minWidth: 120 }}
                             >
@@ -301,9 +256,7 @@ export default function InventarioPage() {
                                 (status) =>
                                   showStateOption(status, purchase) && (
                                     <MenuItem
-                                      disabled={
-                                        status == EPurchaseStatus.PENDING
-                                      }
+                                      disabled={status == EPurchaseStatus.PENDING}
                                       key={status}
                                       value={status}
                                     >
@@ -317,10 +270,7 @@ export default function InventarioPage() {
                         <TableCell>
                           {purchase.status == EPurchaseStatus.PENDING && (
                             <Box display="flex" gap={1}>
-                              <Button
-                                color="blue"
-                                onClick={() => handleConfirmDelete(purchase)}
-                              >
+                              <Button color="blue" onClick={() => handleConfirmDelete(purchase)}>
                                 Eliminar
                               </Button>
                             </Box>
@@ -546,31 +496,34 @@ export default function InventarioPage() {
   );
 }
 
-const purchaseSchema = yup.object().shape({
-  supplierId: yup
-    .number()
-    .required("Proveedor es obligatorio")
+const purchaseSchema = z.object({
+  supplierId: z
+    .number({
+      required_error: "Proveedor es obligatorio",
+      invalid_type_error: "Debe ser un número",
+    })
     .min(1, "Seleccione un proveedor"),
-  componentId: yup
-    .number()
-    .required("Componente es obligatorio")
+  componentId: z
+    .number({
+      required_error: "Componente es obligatorio",
+      invalid_type_error: "Debe ser un número",
+    })
     .min(1, "Seleccione un componente"),
-  quantity: yup
-    .number()
-    .transform((value) => (isNaN(value) ? undefined : value))
-    .required("Cantidad es obligatoria")
-    .min(1, "La cantidad debe ser al menos 1")
-    .typeError("Debe ser un número válido"),
-  unitPrice: yup
-    .number()
-    .transform((value) => (isNaN(value) ? undefined : value))
-    .required("Precio unitario es obligatorio")
-    .min(0.01, "El precio debe ser mayor a 0")
-    .typeError("Debe ser un número válido"),
-  details: yup.string().notRequired(),
-  status: yup
-    .mixed<EPurchaseStatus>()
-    .oneOf(Object.values(EPurchaseStatus))
-    .required(),
-  purchaseDate: yup.date().required("Fecha de compra es obligatoria"),
+  quantity: z
+    .number({
+      required_error: "Cantidad es obligatoria",
+      invalid_type_error: "Debe ser un número válido",
+    })
+    .min(1, "La cantidad debe ser al menos 1"),
+  unitPrice: z
+    .number({
+      required_error: "Precio unitario es obligatorio",
+      invalid_type_error: "Debe ser un número válido",
+    })
+    .min(0.01, "El precio debe ser mayor a 0"),
+  details: z.string().optional(),
+  status: z.nativeEnum(EPurchaseStatus, { required_error: "Estado es obligatorio" }),
+  purchaseDate: z.date({ required_error: "Fecha de compra es obligatoria" }),
 });
+
+type PurchaseFormData = z.infer<typeof purchaseSchema>;
