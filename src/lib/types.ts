@@ -1,9 +1,4 @@
-import {
-  EPurchaseStatus,
-  ETechnicianSpeciality,
-  ETicketPriority,
-  ETicketStatus,
-} from "./enums";
+import { EPurchaseStatus, ETechnicianSpeciality, ETicketPriority, ETicketStatus } from "./enums";
 
 export type TUser = {
   id: number;

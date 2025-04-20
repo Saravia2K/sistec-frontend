@@ -1,13 +1,13 @@
 import axios from "@/lib/axios";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { TTicket } from "@/lib/types";
 import { useAuth } from "./useAuth";
 
 const fetchClientTickets = async (technicianId: number) =>
   axios.get<TTicket[]>(`/tickets/technician/${technicianId}`);
 
-export default function useAssignedTickets() {
-  const { user, token } = useAuth();
+export default function useAssignedTickets(keep = false) {
+  const { user } = useAuth();
   const technicianId = user?.technician?.id;
 
   const {
@@ -18,8 +18,11 @@ export default function useAssignedTickets() {
   } = useQuery({
     queryKey: ["tickets", "assigned", technicianId],
     queryFn: () => fetchClientTickets(technicianId!),
-    enabled: !!technicianId && !!token,
+    placeholderData: keepPreviousData,
     select: (res) => res.data,
+    enabled: !!technicianId,
+    staleTime: keep ? Infinity : 0,
+    refetchOnMount: "always",
   });
 
   return {

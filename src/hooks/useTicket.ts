@@ -15,8 +15,9 @@ export default function useTicket(id: number) {
     queryKey: ["tickets", id],
     queryFn: () => fetchClientTickets(id!),
     enabled: !!id,
-    staleTime: 0,
+    staleTime: Infinity,
     select: (res) => res.data,
+    refetchOnMount: false,
   });
 
   return {

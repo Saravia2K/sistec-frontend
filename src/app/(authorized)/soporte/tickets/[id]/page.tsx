@@ -6,8 +6,8 @@ import { useParams } from "next/navigation";
 
 export default function TechnicianTicketDetailsPage() {
   const { id: ticketId } = useParams<{ id: string }>();
-  const { ticket } = useTicket(+ticketId);
+  const { ticket, refetchTicket } = useTicket(+ticketId);
 
   if (!ticket) return;
-  return <TechnicianTicket ticket={ticket} />;
+  return <TechnicianTicket ticket={ticket} onStateUpdate={refetchTicket} />;
 }

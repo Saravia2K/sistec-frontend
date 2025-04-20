@@ -10,6 +10,7 @@ export default function useAvailableComponents() {
     queryKey: ["components", "stock"],
     queryFn: fetchAvailableComponents,
     placeholderData: keepPreviousData,
+    staleTime: Infinity,
   });
 
   return {

@@ -1,4 +1,4 @@
-import { type PropsWithChildren } from "react";
+import { RefObject, type PropsWithChildren } from "react";
 import { Button as MUIButton } from "@mui/material";
 import { COLORS } from "@/lib/consts";
 
@@ -10,11 +10,13 @@ export default function Button({
   onClick,
   buttonType,
   disabled,
+  ref,
 }: TProps) {
   const _color = COLORS[color.toUpperCase() as keyof typeof COLORS];
   return (
     <MUIButton
       variant="contained"
+      ref={ref}
       sx={{
         textTransform: "none",
         bgcolor: type == "outlined" ? "transparent" : _color,
@@ -42,4 +44,5 @@ type TProps = PropsWithChildren<{
   onClick?: () => void;
   buttonType?: "submit" | "reset" | "button";
   disabled?: boolean;
+  ref?: RefObject<HTMLButtonElement | null>;
 }>;
