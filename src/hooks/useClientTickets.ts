@@ -9,7 +9,7 @@ export const fetchClientTickets = async (customerId: number) =>
 
 export default function useClientTicket() {
   const { user } = useAuth();
-  const customerId = user?.customer.id;
+  const customerId = user?.customer?.id;
 
   const {
     data: tickets = [],

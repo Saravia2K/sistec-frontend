@@ -82,11 +82,7 @@ interface TicketsTableProps {
   update?: () => void;
 }
 
-export default function TicketsTable({
-  data,
-  role,
-  update,
-}: TicketsTableProps) {
+export default function TicketsTable({ data, role, update }: TicketsTableProps) {
   // Estado para los filtros
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -128,16 +124,13 @@ export default function TicketsTable({
   }, [startDate, endDate, priorityFilter, statusFilter, data]);
 
   // Función para cambiar el técnico asignado (solo admin)
-  const handleTechnicianChange = async (
-    ticketId: number,
-    technicianId: number
-  ) => {
+  const handleTechnicianChange = async (ticketId: number, technicianId: number) => {
     try {
       await axios.patch(`/tickets/${ticketId}`, {
         assignedTechnicianId: technicianId,
       });
 
-      update();
+      if (update) update();
     } catch (error) {
       console.error("Error al cambiar técnico:", error);
       Swal.fire("Error", "No se pudo cambiar el técnico asignado", "error");
@@ -145,10 +138,7 @@ export default function TicketsTable({
   };
 
   // Función para cambiar la prioridad (solo admin)
-  const handlePriorityChange = async (
-    ticketId: number,
-    priority: ETicketPriority
-  ) => {
+  const handlePriorityChange = async (ticketId: number, priority: ETicketPriority) => {
     try {
       await axios.patch(`/tickets/${ticketId}`, {
         priority,
@@ -156,9 +146,7 @@ export default function TicketsTable({
 
       // Actualizar el estado local
       setFilteredTickets((prevTickets) =>
-        prevTickets.map((ticket) =>
-          ticket.id === ticketId ? { ...ticket, priority } : ticket
-        )
+        prevTickets.map((ticket) => (ticket.id === ticketId ? { ...ticket, priority } : ticket))
       );
     } catch (error) {
       console.error("Error al cambiar prioridad:", error);
@@ -180,15 +168,9 @@ export default function TicketsTable({
       if (result.isConfirmed) {
         await axios.delete(`/tickets/${id}`);
         // Aquí iría la lógica para eliminar el ticket
-        setFilteredTickets(
-          filteredTickets.filter((ticket) => ticket.id !== id)
-        );
+        setFilteredTickets(filteredTickets.filter((ticket) => ticket.id !== id));
 
-        Swal.fire(
-          "¡Eliminado!",
-          "El ticket ha sido eliminado correctamente.",
-          "success"
-        );
+        Swal.fire("¡Eliminado!", "El ticket ha sido eliminado correctamente.", "success");
       }
     });
   };
@@ -211,8 +193,7 @@ export default function TicketsTable({
         : {
             id: "technician",
             label: "Técnico",
-            render: (ticket: TTicket) =>
-              ticket.assignedTechnician?.name || "Sin asignar",
+            render: (ticket: TTicket) => ticket.assignedTechnician?.name || "Sin asignar",
           },
       {
         id: "deviceType",
@@ -245,12 +226,7 @@ export default function TicketsTable({
           role === "admin" ? (
             <Select
               value={ticket.priority ?? 0}
-              onChange={(e) =>
-                handlePriorityChange(
-                  ticket.id,
-                  e.target.value as ETicketPriority
-                )
-              }
+              onChange={(e) => handlePriorityChange(ticket.id, e.target.value as ETicketPriority)}
               size="small"
               sx={{
                 minWidth: 120,
@@ -296,16 +272,13 @@ export default function TicketsTable({
       {
         id: "creationDate",
         label: "Fecha Creación",
-        render: (ticket: TTicket) =>
-          format(new Date(ticket.requestDate), "dd/MM/yyyy"),
+        render: (ticket: TTicket) => format(new Date(ticket.requestDate), "dd/MM/yyyy"),
       },
       {
         id: "closeDate",
         label: "Fecha Cierre",
         render: (ticket: TTicket) =>
-          ticket.closeDate
-            ? format(new Date(ticket.closeDate), "dd/MM/yyyy")
-            : "-",
+          ticket.closeDate ? format(new Date(ticket.closeDate), "dd/MM/yyyy") : "-",
       },
       {
         id: "actions",
@@ -352,9 +325,7 @@ export default function TicketsTable({
         render: (ticket: TTicket) => (
           <Select
             value={ticket.assignedTechnician?.id ?? 0}
-            onChange={(e) =>
-              handleTechnicianChange(ticket.id, Number(e.target.value))
-            }
+            onChange={(e) => handleTechnicianChange(ticket.id, Number(e.target.value))}
             size="small"
             sx={{ minWidth: 150 }}
           >
@@ -471,11 +442,7 @@ export default function TicketsTable({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={getColumns().length}
-                    align="center"
-                    sx={{ border: 0, py: 3 }}
-                  >
+                  <TableCell colSpan={getColumns().length} align="center" sx={{ border: 0, py: 3 }}>
                     No se encontraron tickets con los filtros seleccionados
                   </TableCell>
                 </TableRow>

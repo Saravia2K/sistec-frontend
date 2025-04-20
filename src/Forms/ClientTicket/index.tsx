@@ -42,7 +42,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
     try {
       const ticketData = {
         ...data,
-        customerId: user?.customer.id,
+        customerId: user?.customer?.id,
       };
 
       if (isEditing) {
@@ -51,22 +51,14 @@ export default function ClientTicket({ ticket, watch }: TProps) {
             Authorization: `Bearer ${token}`,
           },
         });
-        Swal.fire(
-          "¡Actualizado!",
-          "El ticket ha sido actualizado correctamente.",
-          "success"
-        );
+        Swal.fire("¡Actualizado!", "El ticket ha sido actualizado correctamente.", "success");
       } else {
         await axios.post("/tickets", ticketData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        Swal.fire(
-          "¡Creado!",
-          "El ticket ha sido creado correctamente.",
-          "success"
-        );
+        Swal.fire("¡Creado!", "El ticket ha sido creado correctamente.", "success");
       }
 
       if (!isEditing) {
@@ -95,19 +87,12 @@ export default function ClientTicket({ ticket, watch }: TProps) {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_URL}/tickets/${ticket.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        Swal.fire(
-          "¡Eliminado!",
-          "El ticket ha sido eliminado correctamente.",
-          "success"
-        );
+        await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/tickets/${ticket.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Swal.fire("¡Eliminado!", "El ticket ha sido eliminado correctamente.", "success");
         router.push("/cliente/tickets");
       } catch (error) {
         console.error("Error:", error);
@@ -256,10 +241,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
                 gap: 2,
               }}
             >
-              <Button
-                color="blue"
-                onClick={() => router.push("/cliente/tickets")}
-              >
+              <Button color="blue" onClick={() => router.push("/cliente/tickets")}>
                 Cancelar
               </Button>
               <Button color="green" buttonType="submit">
@@ -279,10 +261,7 @@ export default function ClientTicket({ ticket, watch }: TProps) {
               <Button color="blue" onClick={handleDelete}>
                 Eliminar
               </Button>
-              <Button
-                color="green"
-                onClick={() => router.push(`${pathname}/editar`)}
-              >
+              <Button color="green" onClick={() => router.push(`${pathname}/editar`)}>
                 Editar
               </Button>
             </Grid>

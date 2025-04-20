@@ -5,11 +5,7 @@ import { useEffect } from "react";
 import axios from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
 
-export default function ProtectedRoute({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isHydrated, token } = useAuth();
 
@@ -21,7 +17,7 @@ export default function ProtectedRoute({
     } else {
       axios.defaults.headers.common = { Authorization: `Bearer ${token}` };
     }
-  }, [isAuthenticated, isHydrated, router]);
+  }, [isAuthenticated, isHydrated, router, token]);
 
   if (!isHydrated) {
     return <div>Loading...</div>;

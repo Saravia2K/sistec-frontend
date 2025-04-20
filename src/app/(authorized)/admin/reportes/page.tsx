@@ -61,7 +61,7 @@ const chartOptions: ChartOptions<any> = {
 
 export default function StatisticsPage() {
   const [selectedComponentId, setSelectedComponentId] = useState(0);
-  const { components: MUC, errorLoadingComponents: errorMUC } = useMostUsedComponents();
+  const { components: MUC } = useMostUsedComponents();
   const { components } = useComponents();
   const { component, reloadComponent } = useComponentStock(selectedComponentId);
 
@@ -75,7 +75,7 @@ export default function StatisticsPage() {
     if (!selectedComponentId) return;
 
     reloadComponent();
-  }, [selectedComponentId]);
+  }, [selectedComponentId, reloadComponent]);
 
   return (
     <Box>
