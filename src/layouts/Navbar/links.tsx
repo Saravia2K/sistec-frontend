@@ -16,14 +16,10 @@ const links = {
       createLinkItem("Solicitudes", "/solicitudes", ReceiptIcon),
       createLinkItem("Inventario", "/inventario", InventoryIcon),
       createLinkItem("Componentes", "/componentes", SettingsInputComponentIcon),
-      createLinkItem("Usuarios", "/usuarios", PersonIcon),
+      createLinkItem("Clientes", "/usuarios", PersonIcon),
       createLinkItem("Técnicos", "/tecnicos", EngineeringIcon),
       createLinkItem("Proveedores", "/proveedores", FireTruckIcon),
-      createLinkItem(
-        "Dispositivos Soportados",
-        "/dispositivos-soportados",
-        DeviceUnknownIcon
-      ),
+      createLinkItem("Dispositivos Soportados", "/dispositivos-soportados", DeviceUnknownIcon),
       createLinkItem("Reportes", "/reportes", FolderCopyIcon),
     ],
   },
