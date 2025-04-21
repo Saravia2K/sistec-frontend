@@ -1,16 +1,19 @@
 import axios from "@/lib/axios";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData } from "@tanstack/react-query";
 import { TComponent } from "@/lib/types";
+import { useQueryWithInitialData } from "./useQueryWithInitialData";
 
-const fetchComponents = () => axios.get<TComponent[]>("/components");
+// 2. Función para fetch de datos
+export const fetchComponents = () => axios.get<TComponent[]>("/components").then((res) => res.data);
 
-export default function useComponents() {
-  const { isLoading, data, isError, refetch } = useQuery({
+// 3. Hook personalizado para componentes
+export default function useComponents(initialData?: TComponent[]) {
+  const { data, isLoading, isError, refetch } = useQueryWithInitialData({
     queryKey: ["components"],
-    staleTime: Infinity,
     queryFn: fetchComponents,
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
-    select: (res) => res.data,
+    initialData,
   });
 
   return {
