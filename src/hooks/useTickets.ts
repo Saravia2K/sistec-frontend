@@ -1,26 +1,21 @@
 import axios from "@/lib/axios";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { TTicket } from "@/lib/types";
+import { keepPreviousData } from "@tanstack/react-query";
+import type { TTicket } from "@/lib/types";
+import { useQueryWithInitialData } from "./useQueryWithInitialData";
 
-const fetchClientTickets = async () => axios.get<TTicket[]>("/tickets");
+export const fetchTickets = () => axios.get<TTicket[]>("/tickets").then((res) => res.data);
 
-export default function useTickets() {
-  const {
-    data: tickets,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
+export default function useTickets(initialData?: TTicket[]) {
+  const { data, isLoading, error, refetch } = useQueryWithInitialData({
     queryKey: ["tickets"],
-    queryFn: fetchClientTickets,
+    queryFn: fetchTickets,
     placeholderData: keepPreviousData,
     staleTime: Infinity,
-    refetchOnMount: true,
-    select: (res) => res.data,
+    initialData,
   });
 
   return {
-    tickets,
+    tickets: data ?? [],
     isLoading,
     error,
     refetchTicket: refetch,

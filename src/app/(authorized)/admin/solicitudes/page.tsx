@@ -1,31 +1,15 @@
-"use client";
+"use server";
 
-import { Box, Typography } from "@mui/material";
-import TicketsTable from "@/components/TicketsTable";
-import useTickets from "@/hooks/useTickets";
+import { type Metadata } from "next";
+import TicketsPageClient from "./client";
+import { fetchTickets } from "@/hooks/useTickets";
 
-export default function TicketsPage() {
-  const { tickets, refetchTicket } = useTickets();
+export const generateMetadata = async (): Promise<Metadata> => {
+  return {
+    title: "SISTEC | Administrador | Solicitudes",
+  };
+};
 
-  if (!tickets) return;
-  return (
-    <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4" fontWeight="bold">
-          Solicitudes
-        </Typography>
-      </Box>
-
-      <TicketsTable
-        data={tickets ?? []}
-        role="admin"
-        update={() => refetchTicket()}
-      />
-    </Box>
-  );
+export default async function TicketsPage() {
+  return <TicketsPageClient data={await fetchTickets()} />;
 }

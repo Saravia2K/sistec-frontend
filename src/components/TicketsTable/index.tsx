@@ -19,6 +19,7 @@ import {
   TableHead,
   IconButton,
   TableContainer,
+  TablePagination,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import {
@@ -89,6 +90,8 @@ export default function TicketsTable({ data, role, update }: TicketsTableProps) 
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [filteredTickets, setFilteredTickets] = useState<TTicket[]>(data);
+  const [tablePage, setTablePage] = useState(0);
+  const [tableRowsPerPage, setTableRowsPerPage] = useState(5);
   const pathname = usePathname();
   const { technicians } = useTechnicians();
 
@@ -431,15 +434,20 @@ export default function TicketsTable({ data, role, update }: TicketsTableProps) 
             </TableHead>
             <TableBody>
               {filteredTickets.length > 0 ? (
-                filteredTickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    {getColumns().map((column) => (
-                      <TableCell key={`${ticket.id}-${column.id}`}>
-                        {column.render(ticket)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                filteredTickets
+                  .slice(
+                    tablePage * tableRowsPerPage,
+                    tablePage * tableRowsPerPage + tableRowsPerPage
+                  )
+                  .map((ticket) => (
+                    <TableRow key={ticket.id}>
+                      {getColumns().map((column) => (
+                        <TableCell key={`${ticket.id}-${column.id}`}>
+                          {column.render(ticket)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={getColumns().length} align="center" sx={{ border: 0, py: 3 }}>
@@ -450,6 +458,19 @@ export default function TicketsTable({ data, role, update }: TicketsTableProps) 
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredTickets.length}
+          rowsPerPage={tableRowsPerPage}
+          page={tablePage}
+          onPageChange={(_: unknown, newPage: number) => setTablePage(newPage)}
+          onRowsPerPageChange={(e) => setTableRowsPerPage(parseInt(e.target.value, 10))}
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
+          labelRowsPerPage="Filas por página:"
+        />
       </Paper>
     </Box>
   );
