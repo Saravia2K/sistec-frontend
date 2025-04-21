@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import {
   Box,
   Grid,
@@ -68,59 +68,28 @@ export default function ClientePage() {
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={2}>
             <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Box>
-                  <Typography
-                    variant="h6"
-                    color={COLORS.GREEN}
-                    fontWeight="bold"
-                    mb={1}
-                  >
+                  <Typography variant="h6" color={COLORS.GREEN} fontWeight="bold" mb={1}>
                     Hola, {user?.name.split(" ")[0]}
                   </Typography>
-                  <Typography variant="body2">
-                    Echa un vistazo a tus solicitudes
-                  </Typography>
+                  <Typography variant="body2">Echa un vistazo a tus solicitudes</Typography>
                 </Box>
                 <Button color="green" icon type="outlined">
-                  <ArrowForwardIcon
-                    fontSize="small"
-                    style={{ color: COLORS.GREEN }}
-                  />
+                  <ArrowForwardIcon fontSize="small" style={{ color: COLORS.GREEN }} />
                 </Button>
               </Box>
             </Paper>
             <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Box>
-                  <Typography
-                    variant="h6"
-                    color={COLORS.GREEN}
-                    fontWeight="bold"
-                    mb={1}
-                  >
+                  <Typography variant="h6" color={COLORS.GREEN} fontWeight="bold" mb={1}>
                     Crea una solicitud
                   </Typography>
-                  <Typography variant="body2">
-                    ¿Tienes algún problema?
-                  </Typography>
-                  <Typography variant="body2">
-                    Te ayudaremos a resolverlo.
-                  </Typography>
+                  <Typography variant="body2">¿Tienes algún problema?</Typography>
+                  <Typography variant="body2">Te ayudaremos a resolverlo.</Typography>
                 </Box>
-                <Button
-                  color="green"
-                  icon
-                  onClick={() => router.push("/cliente/nueva-solicitud")}
-                >
+                <Button color="green" icon onClick={() => router.push("/cliente/nueva-solicitud")}>
                   <AddIcon />
                 </Button>
               </Box>
@@ -131,12 +100,7 @@ export default function ClientePage() {
         {/* Estado de Solicitudes */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3, borderRadius: 2 }}>
-            <Typography
-              variant="h6"
-              color={COLORS.GREEN}
-              fontWeight="bold"
-              mb={3}
-            >
+            <Typography variant="h6" color={COLORS.GREEN} fontWeight="bold" mb={3}>
               Estado de Solicitudes
             </Typography>
 
@@ -200,8 +164,7 @@ export default function ClientePage() {
                         <TableCell>{request.deviceType.name}</TableCell>
                         <TableCell>{formatDate(request.requestDate)}</TableCell>
                         <TableCell>
-                          {request.assignedTechnician?.user.name ||
-                            "Sin asignar"}
+                          {request.assignedTechnician?.user.name || "Sin asignar"}
                         </TableCell>
                         <TableCell>
                           {request.status === "pending" && "Pendiente"}
@@ -213,14 +176,9 @@ export default function ClientePage() {
                             color="green"
                             icon
                             type="outlined"
-                            onClick={() =>
-                              router.push(`/cliente/tickets/${request.id}`)
-                            }
+                            onClick={() => router.push(`/cliente/tickets/${request.id}`)}
                           >
-                            <ArrowForwardIcon
-                              fontSize="small"
-                              style={{ color: COLORS.GREEN }}
-                            />
+                            <ArrowForwardIcon fontSize="small" style={{ color: COLORS.GREEN }} />
                           </Button>
                         </TableCell>
                       </TableRow>

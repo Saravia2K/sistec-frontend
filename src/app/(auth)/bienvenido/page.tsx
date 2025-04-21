@@ -5,7 +5,7 @@ import { Box, Button, Paper, TextField, Typography } from "@mui/material";
 import { COLORS } from "@/lib/consts";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import logotype from "@/assets/images/logotype_sistec.png";
 import axios from "@/lib/axios";

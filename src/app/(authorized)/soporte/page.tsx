@@ -26,7 +26,7 @@ import { COLORS } from "@/lib/consts";
 import useTechnicianDashboard from "@/hooks/useTechnicianDashboard";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 export default function SoportePage() {
   const { dashboardData, isLoading, isError } = useTechnicianDashboard();
@@ -58,30 +58,15 @@ export default function SoportePage() {
           display="flex"
           alignItems="center"
         >
-          <Box
-            width="100%"
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
+          <Box width="100%" display="flex" justifyContent="space-between" alignItems="center">
             <Box>
-              <Typography
-                variant="h6"
-                color={COLORS.GREEN}
-                fontWeight="bold"
-                mb={1}
-              >
+              <Typography variant="h6" color={COLORS.GREEN} fontWeight="bold" mb={1}>
                 Hola, Técnico
               </Typography>
-              <Typography variant="body2">
-                Tienes {totalTickets} solicitudes asignadas
-              </Typography>
+              <Typography variant="body2">Tienes {totalTickets} solicitudes asignadas</Typography>
             </Box>
             <Button color="green" icon type="outlined">
-              <ArrowForwardIcon
-                fontSize="small"
-                style={{ color: COLORS.GREEN }}
-              />
+              <ArrowForwardIcon fontSize="small" style={{ color: COLORS.GREEN }} />
             </Button>
           </Box>
         </Grid>
@@ -89,23 +74,13 @@ export default function SoportePage() {
         {/* Estado de Solicitudes */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3, borderRadius: 2 }}>
-            <Typography
-              variant="h6"
-              color={COLORS.GREEN}
-              fontWeight="bold"
-              mb={3}
-            >
+            <Typography variant="h6" color={COLORS.GREEN} fontWeight="bold" mb={3}>
               Estado de solicitudes asignadas
             </Typography>
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 6 }}>
-                <StatCard
-                  icon={<ListIcon />}
-                  count={totalTickets}
-                  label="Total"
-                  color="#1a237e"
-                />
+                <StatCard icon={<ListIcon />} count={totalTickets} label="Total" color="#1a237e" />
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <StatCard
@@ -171,11 +146,7 @@ export default function SoportePage() {
                         <TableCell>
                           {ticket.priority === "high" ? (
                             <Box display="flex" alignItems="center">
-                              <WarningIcon
-                                color="error"
-                                fontSize="small"
-                                sx={{ mr: 1 }}
-                              />
+                              <WarningIcon color="error" fontSize="small" sx={{ mr: 1 }} />
                               <span>Alta</span>
                             </Box>
                           ) : ticket.priority === "medium" ? (
@@ -188,9 +159,7 @@ export default function SoportePage() {
                           <Button
                             color="blue"
                             icon
-                            onClick={() =>
-                              router.push(`/soporte/tickets/${ticket.id}`)
-                            }
+                            onClick={() => router.push(`/soporte/tickets/${ticket.id}`)}
                           >
                             <ArrowForwardIcon fontSize="small" />
                           </Button>

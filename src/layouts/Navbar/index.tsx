@@ -28,7 +28,7 @@ import links from "./links";
 
 import logotype_sistec from "@/assets/images/logotype_sistec.png";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar() {
@@ -76,11 +76,7 @@ export default function Navbar() {
             <MenuIcon />
           </IconButton>
           <Drawer open={openDrawer} onClose={() => setOpenDrawer(false)}>
-            <Box
-              sx={{ width: 250 }}
-              role="presentation"
-              onClick={() => setOpenDrawer(false)}
-            >
+            <Box sx={{ width: 250 }} role="presentation" onClick={() => setOpenDrawer(false)}>
               <List>
                 <ListItem disablePadding>
                   <ListItemButton>
@@ -99,11 +95,7 @@ export default function Navbar() {
                       <ListItemIcon>
                         <I />
                       </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Link href={`${pages.prefix}${path}`}>{text}</Link>
-                        }
-                      />
+                      <ListItemText primary={<Link href={`${pages.prefix}${path}`}>{text}</Link>} />
                     </ListItemButton>
                   </ListItem>
                 ))}
@@ -113,18 +105,10 @@ export default function Navbar() {
 
           <Link
             href={`/${
-              user?.customer != null
-                ? "cliente"
-                : user?.technician != null
-                ? "soporte"
-                : "admin"
+              user?.customer != null ? "cliente" : user?.technician != null ? "soporte" : "admin"
             }`}
           >
-            <Image
-              src={logotype_sistec}
-              alt="Sistec"
-              style={{ height: "50px", width: "auto" }}
-            />
+            <Image src={logotype_sistec} alt="Sistec" style={{ height: "50px", width: "auto" }} />
           </Link>
 
           <Box
@@ -175,9 +159,7 @@ export default function Navbar() {
               onClose={handleCloseUserMenu}
             >
               <MenuItem onClick={handleLogoutClick}>
-                <Typography sx={{ textAlign: "center" }}>
-                  Cerrar Sesión
-                </Typography>
+                <Typography sx={{ textAlign: "center" }}>Cerrar Sesión</Typography>
               </MenuItem>
             </Menu>
           </Box>

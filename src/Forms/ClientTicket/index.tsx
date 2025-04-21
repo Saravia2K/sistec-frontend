@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Grid, Paper, FormControl, FormLabel, MenuItem } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import Swal from "sweetalert2";

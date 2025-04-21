@@ -3,13 +3,13 @@
 import { Box, Button, Paper, TextField, Typography } from "@mui/material";
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useAuthStore } from "@/hooks/useLoggedUser";
-
-import logotype from "@/assets/images/logotype_sistec.png";
 import axios from "@/lib/axios";
 import { TClient, TTechnician } from "@/lib/types";
 import { COLORS } from "@/lib/consts";
+
+import logotype from "@/assets/images/logotype_sistec.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

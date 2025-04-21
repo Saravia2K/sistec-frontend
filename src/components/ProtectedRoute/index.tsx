@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import axios from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
