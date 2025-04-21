@@ -6,7 +6,7 @@ import { COLORS } from "@/lib/consts";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "nextjs-toploader/app";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import logotype from "@/assets/images/logotype_sistec.png";
 import axios from "@/lib/axios";
 
@@ -15,7 +15,7 @@ type PasswordFormData = {
 };
 
 export default function WelcomePage() {
-  const { user, isAuthenticated, isHydrated } = useAuth();
+  const { user, isAuthenticated, isHydrated, welcome } = useAuth();
   const router = useRouter();
   const {
     control,
@@ -27,12 +27,28 @@ export default function WelcomePage() {
     },
   });
 
+  const redirectToDashboard = useCallback(() => {
+    if (user?.customer != null) {
+      router.push("/cliente");
+      return;
+    }
+    if (user?.technician != null) {
+      router.push("/soporte");
+      return;
+    } else {
+      router.push("/admin");
+    }
+  }, [user, router]);
+
   // Redirigir si no está autenticado
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
       router.push("/login");
+      return;
     }
-  }, [isAuthenticated, isHydrated, router]);
+
+    if (!user?.firstLogin) redirectToDashboard();
+  }, [isAuthenticated, isHydrated, router, user, redirectToDashboard]);
 
   const onSubmit = async (data: PasswordFormData) => {
     try {
@@ -40,16 +56,9 @@ export default function WelcomePage() {
         password: data.newPassword,
       });
 
-      if (user?.customer != null) {
-        router.push("/cliente");
-        return;
-      }
-      if (user?.technician != null) {
-        router.push("/soporte");
-        return;
-      } else {
-        router.push("/admin");
-      }
+      welcome();
+
+      redirectToDashboard();
     } catch (error) {
       console.error("Error:", error);
       // Puedes mostrar un snackbar o toast con el error
@@ -59,6 +68,8 @@ export default function WelcomePage() {
   if (!isHydrated || !isAuthenticated) {
     return <div>Cargando...</div>;
   }
+
+  if (!user?.firstLogin) return <></>;
 
   return (
     <Paper

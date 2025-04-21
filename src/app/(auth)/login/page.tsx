@@ -1,10 +1,10 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { Box, Button, Paper, TextField, Typography } from "@mui/material";
 import Image from "next/image";
-import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import { useAuthStore } from "@/hooks/useLoggedUser";
+import { useAuth } from "@/hooks/useAuth";
 import axios from "@/lib/axios";
 import { TClient, TTechnician } from "@/lib/types";
 import { COLORS } from "@/lib/consts";
@@ -17,7 +17,23 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, isHydrated, isAuthenticated, user } = useAuth();
+
+  const redirectToDashboard = useCallback(() => {
+    if (user?.firstLogin) {
+      router.push("/bienvenido");
+    } else if (user?.customer != null) {
+      router.push("/cliente");
+    } else if (user?.technician != null) {
+      router.push("/soporte");
+    } else {
+      router.push("/admin");
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) redirectToDashboard();
+  }, [isHydrated, isAuthenticated, redirectToDashboard]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,21 +65,7 @@ export default function LoginPage() {
         token: data.data.token,
       });
 
-      if (data.data.user.firstLogin) {
-        router.push("/bienvenido");
-        return;
-      }
-
-      if (data.data.user.customer != null) {
-        router.push("/cliente");
-        return;
-      }
-      if (data.data.user.technician != null) {
-        router.push("/soporte");
-        return;
-      } else {
-        router.push("/admin");
-      }
+      redirectToDashboard();
     } catch (err: unknown) {
       console.log(err);
       setError("Credenciales incorrectas");
@@ -71,6 +73,8 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (!isHydrated || isAuthenticated) return <></>;
 
   return (
     <Paper
